@@ -1,9 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import { ACHIEVEMENTS } from "../lib/game/achievements";
+import { resolveDirectUrl } from "../lib/db-url";
 import { DEFAULT_SCORING } from "../lib/game/scoring";
 import { getWeekStart, zonedParts } from "../lib/game/time";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: { db: { url: resolveDirectUrl() } },
+});
 
 const CATEGORIES = [
   ["carnatic-music", "Carnatic Music"],

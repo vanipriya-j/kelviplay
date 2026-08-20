@@ -1,31 +1,24 @@
-import { execSync } from "child_process";
-import fs from "fs";
-import path from "path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@prisma/client";
 import { openKelvi, submitKelvi } from "@/lib/game/engine";
 import { DEFAULT_SCORING } from "@/lib/game/scoring";
+import { isPostgresUrl } from "@/lib/db-url";
 
-const dbPath = path.join(process.cwd(), "prisma", "test.db");
-const url = `file:${dbPath}`;
+const url = process.env.DATABASE_URL?.trim() || "";
+const postgres = Boolean(
+  process.env.KELVI_INTEGRATION_DB && isPostgresUrl(url),
+);
 
-describe("kelvi engine integration", () => {
+describe.skipIf(!postgres)("kelvi engine integration", () => {
   let db: PrismaClient;
 
   beforeAll(async () => {
-    process.env.DATABASE_URL = url;
-    if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
-    execSync("npx prisma db push --skip-generate", {
-      env: { ...process.env, DATABASE_URL: url },
-      stdio: "pipe",
-    });
     db = new PrismaClient({ datasources: { db: { url } } });
     await seedMinimal(db);
   });
 
   afterAll(async () => {
     await db.$disconnect();
-    if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
   });
 
   it("keeps the original start time on refresh and blocks double scoring", async () => {
@@ -39,7 +32,9 @@ describe("kelvi engine integration", () => {
     if (second.alreadySubmitted) throw new Error("unexpected");
     expect(second.startedAt).toBe(startedAt);
 
-    const question = await db.question.findFirstOrThrow();
+    const question = await db.question.findFirstOrThrow({
+      where: { number: 184 },
+    });
     const option = await db.questionOption.findFirstOrThrow({
       where: { questionId: question.id, isCorrect: true },
     });
@@ -68,36 +63,47 @@ describe("kelvi engine integration", () => {
 });
 
 async function seedMinimal(db: PrismaClient) {
-  const game = await db.game.create({ data: { slug: "kelvi", name: "Kelvi" } });
-  const category = await db.category.create({ data: { slug: "chennai", name: "Chennai" } });
+  const game =
+    (await db.game.findUnique({ where: { slug: "kelvi" } })) ??
+    (await db.game.create({ data: { slug: "kelvi", name: "Kelvi" } }));
+  const category =
+    (await db.category.findUnique({ where: { slug: "chennai" } })) ??
+    (await db.category.create({ data: { slug: "chennai", name: "Chennai" } }));
   const now = new Date();
-  await db.question.create({
-    data: {
-      gameId: game.id,
-      number: 184,
-      internalTitle: "Live",
-      questionText: "Which composer uses the Padmanabha mudra?",
-      questionType: "MULTIPLE_CHOICE",
-      categoryId: category.id,
-      difficulty: "MEDIUM",
-      correctAnswer: "Swathi Thirunal",
-      acceptableAnswers: [],
-      releaseAt: new Date(now.getTime() - 60_000),
-      expireAt: new Date(now.getTime() + 60 * 60 * 1000),
-      status: "SCHEDULED",
-      scoringConfig: DEFAULT_SCORING as object,
-      options: {
-        create: [
-          { text: "Swathi Thirunal", isCorrect: true, sortOrder: 0 },
-          { text: "Tyagaraja", isCorrect: false, sortOrder: 1 },
-        ],
+  const existing = await db.question.findUnique({ where: { number: 184 } });
+  if (!existing) {
+    await db.question.create({
+      data: {
+        gameId: game.id,
+        number: 184,
+        internalTitle: "Live",
+        questionText: "Which composer uses the Padmanabha mudra?",
+        questionType: "MULTIPLE_CHOICE",
+        categoryId: category.id,
+        difficulty: "MEDIUM",
+        correctAnswer: "Swathi Thirunal",
+        acceptableAnswers: [],
+        releaseAt: new Date(now.getTime() - 60_000),
+        expireAt: new Date(now.getTime() + 60 * 60 * 1000),
+        status: "SCHEDULED",
+        scoringConfig: DEFAULT_SCORING as object,
+        options: {
+          create: [
+            { text: "Swathi Thirunal", isCorrect: true, sortOrder: 0 },
+            { text: "Tyagaraja", isCorrect: false, sortOrder: 1 },
+          ],
+        },
       },
-    },
+    });
+  }
+  await db.achievement.upsert({
+    where: { code: "FIRST_TOP_10" },
+    update: {},
+    create: { code: "FIRST_TOP_10", name: "FIRST TOP 10", description: "Top ten" },
   });
-  await db.achievement.create({
-    data: { code: "FIRST_TOP_10", name: "FIRST TOP 10", description: "Top ten" },
-  });
-  await db.achievement.create({
-    data: { code: "FASTEST_FINGERS", name: "FASTEST FINGERS", description: "First" },
+  await db.achievement.upsert({
+    where: { code: "FASTEST_FINGERS" },
+    update: {},
+    create: { code: "FASTEST_FINGERS", name: "FASTEST FINGERS", description: "First" },
   });
 }
