@@ -1,0 +1,302 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Aarla Play identity. Shared across Kelvi and future games.
+model Player {
+  id              String    @id @default(cuid())
+  name            String?
+  email           String?   @unique
+  emailVerified   DateTime?
+  image           String?
+  displayName     String
+  instagramHandle String?
+  city            String?
+  isGuest         Boolean   @default(false)
+  isAdmin         Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  magicLinks    MagicLink[]
+  attempts      Attempt[]
+  gameStats     PlayerGameStats[]
+  categoryStats PlayerCategoryStats[]
+  achievements  PlayerAchievement[]
+  rewards       Reward[]
+  weeklyScores  WeeklyScore[]
+  gameSessions  GameSession[]
+  presence      LivePresence[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  player            Player  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  player       Player   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model MagicLink {
+  id          String    @id @default(cuid())
+  email       String
+  token       String    @unique
+  displayName String?
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  playerId    String?
+  player      Player?   @relation(fields: [playerId], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+model Game {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+
+  questions Question[]
+  stats     PlayerGameStats[]
+  sessions  GameSession[]
+  weekly    WeeklyScore[]
+}
+
+model Category {
+  id        String @id @default(cuid())
+  slug      String @unique
+  name      String
+
+  questions Question[]
+  stats     PlayerCategoryStats[]
+}
+
+model Question {
+  id                String   @id @default(cuid())
+  gameId            String
+  number            Int      @unique
+  internalTitle     String
+  questionText      String
+  /// MULTIPLE_CHOICE | TEXT | IMAGE | AUDIO
+  questionType      String
+  mediaUrl          String?
+  mediaKind         String?
+  categoryId        String
+  /// EASY | MEDIUM | HARD
+  difficulty        String
+  correctAnswer     String
+  acceptableAnswers Json
+  releaseAt         DateTime
+  expireAt          DateTime
+  /// DRAFT | SCHEDULED | LIVE | EXPIRED | ARCHIVED
+  status            String   @default("SCHEDULED")
+  competitive       Boolean  @default(true)
+  scoringConfig     Json?
+  /// consecutive_correct | participation | custom
+  streakRule        String   @default("consecutive_correct")
+  sponsorName       String?
+  venueHint         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  game     Game              @relation(fields: [gameId], references: [id])
+  category Category          @relation(fields: [categoryId], references: [id])
+  options  QuestionOption[]
+  attempts Attempt[]
+  presence LivePresence[]
+
+  @@index([releaseAt, expireAt])
+  @@index([status])
+}
+
+model QuestionOption {
+  id         String   @id @default(cuid())
+  questionId String
+  text       String
+  isCorrect  Boolean
+  sortOrder  Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model Attempt {
+  id                String    @id @default(cuid())
+  playerId          String
+  questionId        String
+  gameSessionId     String?
+  venueId           String?
+  startedAt         DateTime
+  submittedAt       DateTime?
+  clientOpenedAt    DateTime?
+  clientSubmittedAt DateTime?
+  responseMs        Int?
+  answer            String?
+  correct           Boolean?
+  score             Int       @default(0)
+  attemptCount      Int       @default(0)
+  createdAt         DateTime  @default(now())
+
+  player      Player       @relation(fields: [playerId], references: [id])
+  question    Question     @relation(fields: [questionId], references: [id])
+  gameSession GameSession? @relation(fields: [gameSessionId], references: [id])
+  venue       Venue?       @relation(fields: [venueId], references: [id])
+
+  @@unique([playerId, questionId])
+  @@index([questionId, correct, responseMs])
+  @@index([playerId, submittedAt])
+}
+
+model GameSession {
+  id        String    @id @default(cuid())
+  playerId  String
+  gameId    String
+  venueId   String?
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  player   Player    @relation(fields: [playerId], references: [id])
+  game     Game      @relation(fields: [gameId], references: [id])
+  venue    Venue?    @relation(fields: [venueId], references: [id])
+  attempts Attempt[]
+}
+
+model PlayerGameStats {
+  playerId       String
+  gameId         String
+  currentStreak  Int       @default(0)
+  bestStreak     Int       @default(0)
+  totalPlayed    Int       @default(0)
+  totalCorrect   Int       @default(0)
+  totalScore     Int       @default(0)
+  bestResponseMs Int?
+  lastPlayedAt   DateTime?
+
+  player Player @relation(fields: [playerId], references: [id])
+  game   Game   @relation(fields: [gameId], references: [id])
+
+  @@id([playerId, gameId])
+}
+
+model PlayerCategoryStats {
+  playerId   String
+  categoryId String
+  played     Int    @default(0)
+  correct    Int    @default(0)
+
+  player   Player   @relation(fields: [playerId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@id([playerId, categoryId])
+}
+
+model WeeklyScore {
+  id              String   @id @default(cuid())
+  playerId        String
+  gameId          String
+  weekStart       DateTime
+  points          Int      @default(0)
+  attempted       Int      @default(0)
+  correct         Int      @default(0)
+  totalResponseMs Int      @default(0)
+
+  player Player @relation(fields: [playerId], references: [id])
+  game   Game   @relation(fields: [gameId], references: [id])
+
+  @@unique([playerId, gameId, weekStart])
+  @@index([gameId, weekStart, points])
+}
+
+model Achievement {
+  id          String @id @default(cuid())
+  code        String @unique
+  name        String
+  description String
+
+  players PlayerAchievement[]
+}
+
+model PlayerAchievement {
+  playerId      String
+  achievementId String
+  earnedAt      DateTime @default(now())
+
+  player      Player      @relation(fields: [playerId], references: [id])
+  achievement Achievement @relation(fields: [achievementId], references: [id])
+
+  @@id([playerId, achievementId])
+}
+
+model Venue {
+  id     String @id @default(cuid())
+  name   String
+  slug   String @unique
+  city   String
+  type   String
+
+  sessions GameSession[]
+  attempts Attempt[]
+}
+
+model Reward {
+  id            String    @id @default(cuid())
+  weekStart     DateTime
+  type          String
+  playerId      String?
+  voucherCode   String?
+  voucherAmount Int?
+  currency      String    @default("INR")
+  issuedAt      DateTime?
+  expiresAt     DateTime?
+  redeemedAt    DateTime?
+  notes         String?
+
+  player Player? @relation(fields: [playerId], references: [id])
+
+  @@unique([weekStart, type])
+}
+
+model LivePresence {
+  questionId String
+  playerId   String
+  lastSeenAt DateTime
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  player   Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, playerId])
+}
+
+model AppConfig {
+  key   String @id
+  value Json
+}
