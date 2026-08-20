@@ -18,6 +18,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 30 },
   pages: {
     signIn: "/auth",
+    error: "/auth",
   },
   providers: [
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
@@ -47,70 +48,73 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         demoKey: { label: "demoKey", type: "text" },
       },
       async authorize(credentials) {
-        const kind = String(credentials?.kind ?? "");
+        try {
+          const kind = String(credentials?.kind ?? "");
 
-        if (kind === "guest") {
-          const player = await prisma.player.create({
-            data: {
-              displayName: guestName(),
-              name: "Guest",
-              isGuest: true,
-            },
-          });
-          return toAuthUser(player);
-        }
-
-        if (kind === "magic") {
-          const token = String(credentials?.token ?? "");
-          const link = await prisma.magicLink.findUnique({ where: { token } });
-          if (!link || link.consumedAt || link.expiresAt < new Date()) {
-            return null;
-          }
-          const displayName =
-            (credentials?.displayName
-              ? String(credentials.displayName)
-              : link.displayName) || link.email.split("@")[0];
-          const existing = await prisma.player.findUnique({
-            where: { email: link.email },
-          });
-          const player =
-            existing ??
-            (await prisma.player.create({
+          if (kind === "guest") {
+            const player = await prisma.player.create({
               data: {
-                email: link.email,
-                emailVerified: new Date(),
-                displayName: publicName(displayName, "Player"),
-                name: displayName,
-                isGuest: false,
+                displayName: guestName(),
+                name: "Guest",
+                isGuest: true,
               },
-            }));
-          if (!existing) {
-            // keep
-          } else if (existing.isGuest) {
-            await prisma.player.update({
-              where: { id: existing.id },
-              data: { isGuest: false, emailVerified: new Date() },
             });
+            return toAuthUser(player);
           }
-          await prisma.magicLink.update({
-            where: { id: link.id },
-            data: { consumedAt: new Date(), playerId: player.id },
-          });
-          return toAuthUser({ ...player, isGuest: false });
-        }
 
-        if (kind === "demo" && demoEnabled) {
-          const demoKey = String(credentials?.demoKey ?? "");
-          const player = await prisma.player.findFirst({
-            where:
-              demoKey === "admin"
-                ? { isAdmin: true }
-                : { displayName: demoKey, isGuest: false },
-          });
-          return player ? toAuthUser(player) : null;
-        }
+          if (kind === "magic") {
+            const token = String(credentials?.token ?? "");
+            const link = await prisma.magicLink.findUnique({ where: { token } });
+            if (!link || link.consumedAt || link.expiresAt < new Date()) {
+              return null;
+            }
+            const displayName =
+              (credentials?.displayName
+                ? String(credentials.displayName)
+                : link.displayName) || link.email.split("@")[0];
+            const existing = await prisma.player.findUnique({
+              where: { email: link.email },
+            });
+            const player =
+              existing ??
+              (await prisma.player.create({
+                data: {
+                  email: link.email,
+                  emailVerified: new Date(),
+                  displayName: publicName(displayName, "Player"),
+                  name: displayName,
+                  isGuest: false,
+                },
+              }));
+            if (existing?.isGuest) {
+              await prisma.player.update({
+                where: { id: existing.id },
+                data: { isGuest: false, emailVerified: new Date() },
+              });
+            }
+            await prisma.magicLink.update({
+              where: { id: link.id },
+              data: { consumedAt: new Date(), playerId: player.id },
+            });
+            return toAuthUser({ ...player, isGuest: false });
+          }
 
-        return null;
+          if (kind === "demo" && demoEnabled) {
+            const demoKey = String(credentials?.demoKey ?? "");
+            const player = await prisma.player.findFirst({
+              where:
+                demoKey === "admin"
+                  ? { isAdmin: true }
+                  : { displayName: demoKey, isGuest: false },
+            });
+            return player ? toAuthUser(player) : null;
+          }
+
+          return null;
+        } catch (error) {
+          console.error("[kelvi] sign-in failed", error);
+          return null;
+        }
       },
     }),
   ],

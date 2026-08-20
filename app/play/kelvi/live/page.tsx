@@ -22,7 +22,11 @@ export default function LiveKelviPage() {
     async function boot() {
       if (status === "loading") return;
       if (status !== "authenticated") {
-        await signIn("kelvi", { kind: "guest", redirect: false });
+        const signed = await signIn("kelvi", { kind: "guest", redirect: false });
+        if (signed?.error) {
+          setError("Could not open a guest seat. If this is a fresh install, run npm run db:setup.");
+          return;
+        }
         return;
       }
       const result = await openLiveKelviAction();

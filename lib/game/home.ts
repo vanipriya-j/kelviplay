@@ -5,25 +5,48 @@ import { formatWindowLabel, getDayStart, getWeekStart } from "./time";
 import { countPlaying, getKelviGame, getLiveQuestion, getNextQuestion } from "./engine";
 import { publicName } from "../utils";
 
+function emptyHome() {
+  return {
+    player: null,
+    live: null,
+    next: null,
+    stats: {
+      currentStreak: 0,
+      bestStreak: 0,
+      weeklyRank: null as number | null,
+      weeklyPoints: 0,
+      nextMilestone: 3 as number | null,
+      todayCompleted: 0,
+      todayTotal: 0,
+    },
+    weeklyPreview: [] as ReturnType<typeof rankWeekly>,
+    youWeekly: null as ReturnType<typeof rankWeekly>[number] | null,
+    recentAchievements: [] as { code: string; name: string; earnedAt: string }[],
+    presenceTtlMs: PRESENCE_TTL_MS,
+    setupNeeded: true,
+  };
+}
+
 export async function getHomeState(db: PrismaClient, playerId?: string | null) {
-  const now = new Date();
-  const [live, next, game, player] = await Promise.all([
-    getLiveQuestion(db, now),
-    getNextQuestion(db, now),
-    getKelviGame(db),
-    playerId
-      ? db.player.findUnique({
-          where: { id: playerId },
-          select: {
-            id: true,
-            displayName: true,
-            isGuest: true,
-            isAdmin: true,
-            image: true,
-          },
-        })
-      : null,
-  ]);
+  try {
+    const now = new Date();
+    const [live, next, game, player] = await Promise.all([
+      getLiveQuestion(db, now),
+      getNextQuestion(db, now),
+      getKelviGame(db),
+      playerId
+        ? db.player.findUnique({
+            where: { id: playerId },
+            select: {
+              id: true,
+              displayName: true,
+              isGuest: true,
+              isAdmin: true,
+              image: true,
+            },
+          })
+        : null,
+    ]);
 
   const stats = playerId
     ? await db.playerGameStats.findUnique({
@@ -128,10 +151,16 @@ export async function getHomeState(db: PrismaClient, playerId?: string | null) {
       earnedAt: row.earnedAt.toISOString(),
     })),
     presenceTtlMs: PRESENCE_TTL_MS,
+    setupNeeded: false,
   };
+  } catch (error) {
+    console.error("[kelvi] home state failed", error);
+    return emptyHome();
+  }
 }
 
 export async function getLeaderboardState(db: PrismaClient, playerId?: string | null) {
+  try {
   const now = new Date();
   const [live, game] = await Promise.all([getLiveQuestion(db, now), getKelviGame(db)]);
   const weekStart = getWeekStart(now);
@@ -201,14 +230,53 @@ export async function getLeaderboardState(db: PrismaClient, playerId?: string | 
         }
       : null,
   };
+  } catch (error) {
+    console.error("[kelvi] leaderboard failed", error);
+    return {
+      liveNumber: null,
+      fasterFingers: [],
+      weekly: [],
+      weeklyTotal: 0,
+      youWeekly: null,
+      you: null,
+    };
+  }
 }
 
 export async function getProfileState(db: PrismaClient, playerId: string) {
-  const [player, game] = await Promise.all([
-    db.player.findUnique({ where: { id: playerId } }),
-    getKelviGame(db),
-  ]);
+  const player = await db.player.findUnique({ where: { id: playerId } });
   if (!player) return null;
+  let game: { id: string } | null = null;
+  try {
+    game = await getKelviGame(db);
+  } catch {
+    game = null;
+  }
+  if (!game) {
+    return {
+      player: {
+        id: player.id,
+        displayName: publicName(player.displayName),
+        instagramHandle: player.instagramHandle,
+        city: player.city,
+        image: player.image,
+        isGuest: player.isGuest,
+        email: player.email,
+        joinedAt: player.createdAt.toISOString(),
+      },
+      stats: {
+        currentStreak: 0,
+        bestStreak: 0,
+        weeklyRank: null,
+        bestResponseMs: null,
+        accuracy: 0,
+        played: 0,
+        correct: 0,
+        totalScore: 0,
+      },
+      categories: [],
+    };
+  }
 
   const [stats, categories, weekStart] = await Promise.all([
     db.playerGameStats.findUnique({

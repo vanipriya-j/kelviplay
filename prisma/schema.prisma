@@ -3,8 +3,11 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  // Isolated from Aarla OS commerce tables in `public`.
+  schemas   = ["kelvi"]
 }
 
 /// Aarla Play identity. Shared across Kelvi and future games.
@@ -33,6 +36,7 @@ model Player {
   weeklyScores  WeeklyScore[]
   gameSessions  GameSession[]
   presence      LivePresence[]
+  @@schema("kelvi")
 }
 
 model Account {
@@ -51,6 +55,7 @@ model Account {
   player            Player  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@schema("kelvi")
 }
 
 model Session {
@@ -59,6 +64,7 @@ model Session {
   userId       String
   expires      DateTime
   player       Player   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@schema("kelvi")
 }
 
 model VerificationToken {
@@ -67,6 +73,7 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+  @@schema("kelvi")
 }
 
 model MagicLink {
@@ -79,6 +86,7 @@ model MagicLink {
   playerId    String?
   player      Player?   @relation(fields: [playerId], references: [id])
   createdAt   DateTime  @default(now())
+  @@schema("kelvi")
 }
 
 model Game {
@@ -91,6 +99,7 @@ model Game {
   stats     PlayerGameStats[]
   sessions  GameSession[]
   weekly    WeeklyScore[]
+  @@schema("kelvi")
 }
 
 model Category {
@@ -100,6 +109,7 @@ model Category {
 
   questions Question[]
   stats     PlayerCategoryStats[]
+  @@schema("kelvi")
 }
 
 model Question {
@@ -138,6 +148,7 @@ model Question {
 
   @@index([releaseAt, expireAt])
   @@index([status])
+  @@schema("kelvi")
 }
 
 model QuestionOption {
@@ -147,6 +158,7 @@ model QuestionOption {
   isCorrect  Boolean
   sortOrder  Int
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  @@schema("kelvi")
 }
 
 model Attempt {
@@ -174,6 +186,7 @@ model Attempt {
   @@unique([playerId, questionId])
   @@index([questionId, correct, responseMs])
   @@index([playerId, submittedAt])
+  @@schema("kelvi")
 }
 
 model GameSession {
@@ -188,6 +201,7 @@ model GameSession {
   game     Game      @relation(fields: [gameId], references: [id])
   venue    Venue?    @relation(fields: [venueId], references: [id])
   attempts Attempt[]
+  @@schema("kelvi")
 }
 
 model PlayerGameStats {
@@ -205,6 +219,7 @@ model PlayerGameStats {
   game   Game   @relation(fields: [gameId], references: [id])
 
   @@id([playerId, gameId])
+  @@schema("kelvi")
 }
 
 model PlayerCategoryStats {
@@ -217,6 +232,7 @@ model PlayerCategoryStats {
   category Category @relation(fields: [categoryId], references: [id])
 
   @@id([playerId, categoryId])
+  @@schema("kelvi")
 }
 
 model WeeklyScore {
@@ -234,6 +250,7 @@ model WeeklyScore {
 
   @@unique([playerId, gameId, weekStart])
   @@index([gameId, weekStart, points])
+  @@schema("kelvi")
 }
 
 model Achievement {
@@ -243,6 +260,7 @@ model Achievement {
   description String
 
   players PlayerAchievement[]
+  @@schema("kelvi")
 }
 
 model PlayerAchievement {
@@ -254,6 +272,7 @@ model PlayerAchievement {
   achievement Achievement @relation(fields: [achievementId], references: [id])
 
   @@id([playerId, achievementId])
+  @@schema("kelvi")
 }
 
 model Venue {
@@ -265,6 +284,7 @@ model Venue {
 
   sessions GameSession[]
   attempts Attempt[]
+  @@schema("kelvi")
 }
 
 model Reward {
@@ -283,6 +303,7 @@ model Reward {
   player Player? @relation(fields: [playerId], references: [id])
 
   @@unique([weekStart, type])
+  @@schema("kelvi")
 }
 
 model LivePresence {
@@ -294,9 +315,11 @@ model LivePresence {
   player   Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@id([questionId, playerId])
+  @@schema("kelvi")
 }
 
 model AppConfig {
   key   String @id
   value Json
+  @@schema("kelvi")
 }
