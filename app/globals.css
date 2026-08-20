@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+:root {
+  --ivory: #f3ede2;
+  --paper: #ebe3d3;
+  --cloud: #f7f3ea;
+  --ink: #1c1915;
+  --muted: #6a6358;
+  --rule: #d8d0c0;
+  --terracotta: #b5523a;
+  --forest: #3e5648;
+  --clay: #c4a57a;
+  --live: #b5523a;
+}
+
+@theme inline {
+  --color-ivory: var(--ivory);
+  --color-paper: var(--paper);
+  --color-cloud: var(--cloud);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-rule: var(--rule);
+  --color-terracotta: var(--terracotta);
+  --color-forest: var(--forest);
+  --color-clay: var(--clay);
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+}
+
+html,
+body {
+  background: var(--ivory);
+  color: var(--ink);
+}
+
+body {
+  min-height: 100dvh;
+  background-image:
+    radial-gradient(1200px 500px at 50% -10%, rgba(196, 165, 122, 0.16), transparent 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.25), transparent 30%);
+  font-family: var(--font-sans), "Figtree", system-ui, sans-serif;
+}
+
+.font-serif {
+  font-family: var(--font-serif), "Newsreader", "Times New Roman", serif;
+}
+
+.paper-grain {
+  background-color: var(--paper);
+  background-image: radial-gradient(rgba(28, 25, 21, 0.035) 0.6px, transparent 0.6px);
+  background-size: 7px 7px;
+}
+
+.hairline {
+  height: 1px;
+  background: var(--rule);
+}
+
+@keyframes kelvi-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.92);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes flame {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-1px) scale(1.06);
+  }
+}
+
+.animate-kelvi-pulse {
+  animation: kelvi-pulse 1.8s ease-in-out infinite;
+}
+
+.animate-rise {
+  animation: rise-in 0.55s ease both;
+}
+
+.animate-flame {
+  display: inline-block;
+  animation: flame 1.4s ease-in-out infinite;
+}
+
+.delay-1 {
+  animation-delay: 0.08s;
+}
+.delay-2 {
+  animation-delay: 0.16s;
+}
+.delay-3 {
+  animation-delay: 0.24s;
+}
+.delay-4 {
+  animation-delay: 0.32s;
+}
+
+.option-btn {
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.option-btn:active {
+  transform: scale(0.985);
+}
