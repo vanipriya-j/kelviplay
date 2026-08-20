@@ -9,9 +9,25 @@ import { Wordmark } from "@/components/brand/Wordmark";
 const googleEnabled = Boolean(process.env.NEXT_PUBLIC_GOOGLE_AUTH);
 const demoEnabled = process.env.NODE_ENV !== "production";
 
-export function AuthForm({ next = "/play/kelvi" }: { next?: string }) {
+const AUTH_ERRORS: Record<string, string> = {
+  Configuration: "Sign-in is not fully configured. Set AUTH_SECRET and run npm run db:setup.",
+  CredentialsSignin: "That sign-in did not work. Try guest play, or seed demo players with npm run db:setup.",
+  AccessDenied: "That account cannot enter.",
+  Verification: "That link has expired. Request a new one.",
+  Default: "Sign-in hit a snag. Try again, or play as guest.",
+};
+
+export function AuthForm({
+  next = "/play/kelvi",
+  errorCode,
+}: {
+  next?: string;
+  errorCode?: string;
+}) {
   const [preview, setPreview] = useState<string | undefined>();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    errorCode ? AUTH_ERRORS[errorCode] ?? AUTH_ERRORS.Default : null,
+  );
   const [pending, start] = useTransition();
 
   return (

@@ -61,6 +61,13 @@ export function KelviHome({ initial }: { initial: HomeState }) {
         </section>
       )}
 
+      {state.setupNeeded ? (
+        <p className="mt-8 rounded-2xl border border-rule bg-cloud px-4 py-3 text-sm text-muted">
+          Kelvi needs a local database. From the project folder run{" "}
+          <span className="text-ink">npm run db:setup</span>, then refresh.
+        </p>
+      ) : null}
+
       <dl className="mt-12 grid grid-cols-2 gap-3">
         <Stat label="Streak" value={`🔥 ${state.stats.currentStreak}`} />
         <Stat
