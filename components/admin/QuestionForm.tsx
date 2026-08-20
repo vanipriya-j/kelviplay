@@ -29,18 +29,21 @@ export function QuestionForm({
   categories,
   defaultNumber,
   question,
+  defaultReleaseAt = "",
+  defaultExpireAt = "",
 }: {
   categories: Category[];
   defaultNumber: number;
   question?: QuestionValues;
+  defaultReleaseAt?: string;
+  defaultExpireAt?: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
-  const defaultRelease = question?.releaseAt ?? new Date().toISOString().slice(0, 16);
-  const defaultExpire =
-    question?.expireAt ?? new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString().slice(0, 16);
+  const defaultRelease = question?.releaseAt ?? defaultReleaseAt;
+  const defaultExpire = question?.expireAt ?? defaultExpireAt;
 
   return (
     <form

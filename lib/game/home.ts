@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { rankWeekly } from "./leaderboard";
-import { KELVI_SLUG, nextMilestone, PRESENCE_TTL_MS } from "./scoring";
+import { nextMilestone, PRESENCE_TTL_MS } from "./scoring";
 import { formatWindowLabel, getDayStart, getWeekStart } from "./time";
 import { countPlaying, getKelviGame, getLiveQuestion, getNextQuestion } from "./engine";
 import { publicName } from "../utils";

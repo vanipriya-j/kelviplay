@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 import QRCode from "qrcode";
@@ -70,6 +71,33 @@ export async function GET(request: NextRequest) {
     color: { dark: "#1c1915", light: "#f3ede2" },
   });
 
+  const body =
+    card.variant === "weekly" ? (
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <div style={{ fontSize: 80 }}>🏆</div>
+        <div style={{ marginTop: 24, fontSize: 92, lineHeight: 1 }}>{card.headline}</div>
+        <div style={{ marginTop: 24, fontSize: 48, letterSpacing: 2 }}>{card.subhead}</div>
+      </div>
+    ) : card.variant === "streak" ? (
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <div style={{ fontSize: 80 }}>🔥</div>
+        <div style={{ marginTop: 24, fontSize: 92, lineHeight: 1 }}>{card.headline}</div>
+        <div style={{ marginTop: 24, fontSize: 48, letterSpacing: 2 }}>{card.subhead}</div>
+      </div>
+    ) : card.variant === "fastest" ? (
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <div style={{ fontSize: 42, letterSpacing: 8 }}>FASTEST FINGERS</div>
+        <div style={{ marginTop: 24, fontSize: 92, lineHeight: 1 }}>{card.subhead}</div>
+        <div style={{ marginTop: 20, fontSize: 36 }}>{card.rankLabel ?? ""}</div>
+      </div>
+    ) : (
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <div style={{ fontSize: 42, letterSpacing: 6 }}>{`⚡ ${card.responseSeconds ?? ""} SEC`}</div>
+        <div style={{ marginTop: 28, fontSize: 120, lineHeight: 1 }}>{card.rankLabel ?? ""}</div>
+        <div style={{ marginTop: 48, fontSize: 40 }}>{`🔥 ${card.streak ?? 0} STREAK`}</div>
+      </div>
+    );
+
   return new ImageResponse(
     (
       <div
@@ -86,38 +114,12 @@ export async function GET(request: NextRequest) {
         }}
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ fontSize: 22, letterSpacing: 12, textTransform: "uppercase", color: "#6a6358" }}>
-            AARLA PLAY
+          <div style={{ fontSize: 22, letterSpacing: 12, color: "#6a6358" }}>AARLA PLAY</div>
+          <div style={{ marginTop: 18, fontSize: 28, letterSpacing: 8 }}>
+            {card.kelviNumber ? `KELVI #${card.kelviNumber}` : "KELVI"}
           </div>
-          {card.kelviNumber ? (
-            <div style={{ marginTop: 18, fontSize: 28, letterSpacing: 8 }}>KELVI #{card.kelviNumber}</div>
-          ) : null}
         </div>
-
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {card.variant === "weekly" ? <div style={{ fontSize: 80 }}>🏆</div> : null}
-          {card.variant === "streak" ? <div style={{ fontSize: 80 }}>🔥</div> : null}
-          {card.variant === "fastest" ? (
-            <div style={{ fontSize: 42, letterSpacing: 8 }}>FASTEST FINGERS ⚡</div>
-          ) : null}
-          {card.variant === "result" ? (
-            <div style={{ fontSize: 42, letterSpacing: 6 }}>⚡ {card.responseSeconds} SEC</div>
-          ) : (
-            <div style={{ marginTop: 24, fontSize: 92, lineHeight: 1 }}>{card.headline}</div>
-          )}
-          {card.variant === "result" ? (
-            <div style={{ marginTop: 28, fontSize: 120, lineHeight: 1 }}>{card.rankLabel}</div>
-          ) : (
-            <div style={{ marginTop: 24, fontSize: 48, letterSpacing: 2 }}>{card.subhead}</div>
-          )}
-          {card.variant === "result" && card.streak != null ? (
-            <div style={{ marginTop: 48, fontSize: 40 }}>🔥 {card.streak} STREAK</div>
-          ) : null}
-          {card.rankLabel && card.variant === "fastest" ? (
-            <div style={{ marginTop: 20, fontSize: 36 }}>{card.rankLabel}</div>
-          ) : null}
-        </div>
-
+        {body}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ fontSize: 34, letterSpacing: 4 }}>{card.cta}</div>
