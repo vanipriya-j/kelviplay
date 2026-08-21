@@ -31,7 +31,9 @@ npm run db:setup
 npm run dev
 ```
 
-Or paste `supabase/kelvi-complete.sql` in the Supabase SQL Editor (first time only), then run `npm run db:seed`. `npm run db:setup` is the Prisma path: create schema `kelvi`, push tables, seed.
+Or paste `supabase/kelvi-complete.sql` in the Supabase SQL Editor (first time only), then run `npm run db:seed`. `npm run db:setup` is the Prisma CLI path: create schema `kelvi`, push tables, seed.
+
+On Vercel, after `DATABASE_URL` is set, open **`/setup`** once and paste `AUTH_SECRET` (or `SETUP_SECRET` if you added one). That uses the Aarla OS database already configured for kelviplay.
 
 Open [http://localhost:3000](http://localhost:3000). It lands on `/play`.
 
@@ -82,6 +84,7 @@ npm run build
 
 - Set `AUTH_SECRET` and `DATABASE_URL` (Supabase transaction pooler :6543). `DIRECT_URL` is optional.
 - On Vercel, the existing kelviplay `DATABASE_URL` is enough — same pooler URI as Aarla OS. Session-pooler URIs are rewritten to port 6543 unless `DATABASE_POOL_MODE=session`. Prisma also adds `pgbouncer=true` and `connection_limit=1` on Vercel.
+- First deploy: open `/setup` and paste `AUTH_SECRET`. That creates schema `kelvi` and seeds questions. It does not touch Aarla OS `public` tables.
 - Add `GOOGLE_CLIENT_ID` / `APPLE_ID` when those providers should appear.
 - Magic links currently print a demo URL; wire SMTP before public launch.
 - Voucher redemption is manual in admin. No payments in this MVP.
