@@ -3,7 +3,7 @@
  * Do not use AUTH_URL when it is localhost or the Auth.js API path —
  * that is a common Vercel leftover and makes sign-in report Configuration.
  */
-import { runtimeEnv } from "./runtime-env";
+import { authSecret, runtimeEnv } from "./runtime-env";
 
 export function publicAppUrl(): string {
   const nextPublic = stripSlash(runtimeEnv("NEXT_PUBLIC_APP_URL"));
@@ -36,6 +36,7 @@ export function isUnusableOrigin(url: string): boolean {
 /** Auth.js reads AUTH_URL / AUTH_TRUST_HOST from the environment. */
 export function prepareAuthEnv() {
   process.env["AUTH_TRUST_HOST"] = "true";
+  authSecret();
 
   const current = runtimeEnv("AUTH_URL") || runtimeEnv("NEXTAUTH_URL");
   if (current && isUnusableOrigin(current)) {
