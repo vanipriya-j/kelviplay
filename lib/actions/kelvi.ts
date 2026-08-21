@@ -1,9 +1,8 @@
 "use server";
 
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { GameError, openKelvi, submitKelvi } from "@/lib/game/engine";
-import { ensureGuestPlayerId } from "@/lib/session-cookie";
+import { existingPlayerId, isMissingAuthSecret, playerIdForPlay } from "@/lib/play-session";
 import { z } from "zod";
 
 const submitSchema = z.object({
@@ -14,21 +13,32 @@ const submitSchema = z.object({
 });
 
 export async function playNowAction() {
-  const session = await auth();
-  await ensureGuestPlayerId(session?.user?.id);
+  try {
+    await playerIdForPlay();
+    return { ok: true as const };
+  } catch (error) {
+    console.error("[kelvi] play now failed", error);
+    return {
+      ok: false as const,
+      error: isMissingAuthSecret(error)
+        ? "Kelvi is missing AUTH_SECRET on this Vercel deployment."
+        : "Could not open this Kelvi. Try again.",
+    };
+  }
 }
 
 export async function openLiveKelviAction(venueId?: string) {
-  const session = await auth();
   let playerId: string;
   try {
-    playerId = await ensureGuestPlayerId(session?.user?.id);
+    playerId = await playerIdForPlay();
   } catch (error) {
     console.error("[kelvi] guest session failed", error);
     return {
       ok: false as const,
       code: "UNAUTHENTICATED",
-      message: "Could not open a guest seat. Try again.",
+      message: isMissingAuthSecret(error)
+        ? "Kelvi is missing AUTH_SECRET on this Vercel deployment."
+        : "Could not open a guest seat. Try again.",
     };
   }
   try {
@@ -51,8 +61,7 @@ export async function openLiveKelviAction(venueId?: string) {
 }
 
 export async function submitKelviAction(input: unknown) {
-  const session = await auth();
-  const playerId = session?.user?.id;
+  const playerId = await existingPlayerId();
   if (!playerId) {
     return {
       ok: false as const,
