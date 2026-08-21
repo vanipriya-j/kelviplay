@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isUnusableOrigin, publicAppUrl } from "@/lib/app-url";
+import { isUnusableOrigin, prepareAuthEnv, publicAppUrl } from "@/lib/app-url";
 
 describe("public app url", () => {
   it("rejects localhost and Auth.js API paths", () => {
@@ -18,6 +18,26 @@ describe("public app url", () => {
     } finally {
       process.env.NEXT_PUBLIC_APP_URL = prev;
       process.env.AUTH_URL = prevAuth;
+    }
+  });
+
+  it("sets AUTH_TRUST_HOST and replaces localhost AUTH_URL on Vercel", () => {
+    const prevVercel = process.env.VERCEL;
+    const prevAuth = process.env.AUTH_URL;
+    const prevTrust = process.env.AUTH_TRUST_HOST;
+    const prevPublic = process.env.NEXT_PUBLIC_APP_URL;
+    process.env.VERCEL = "1";
+    process.env.AUTH_URL = "http://localhost:3000";
+    process.env.NEXT_PUBLIC_APP_URL = "https://kelviplay.vercel.app";
+    try {
+      prepareAuthEnv();
+      expect(process.env.AUTH_TRUST_HOST).toBe("true");
+      expect(process.env.AUTH_URL).toBe("https://kelviplay.vercel.app");
+    } finally {
+      process.env.VERCEL = prevVercel;
+      process.env.AUTH_URL = prevAuth;
+      process.env.AUTH_TRUST_HOST = prevTrust;
+      process.env.NEXT_PUBLIC_APP_URL = prevPublic;
     }
   });
 });
