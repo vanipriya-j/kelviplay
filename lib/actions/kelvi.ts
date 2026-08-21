@@ -1,8 +1,9 @@
 "use server";
 
-import { auth, signIn } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { GameError, openKelvi, submitKelvi } from "@/lib/game/engine";
+import { ensureGuestPlayerId } from "@/lib/session-cookie";
 import { z } from "zod";
 
 const submitSchema = z.object({
@@ -14,19 +15,25 @@ const submitSchema = z.object({
 
 export async function playNowAction() {
   const session = await auth();
-  if (!session?.user?.id) {
-    await signIn("kelvi", { kind: "guest", redirect: false });
-  }
+  await ensureGuestPlayerId(session?.user?.id);
 }
 
 export async function openLiveKelviAction(venueId?: string) {
   const session = await auth();
-  if (!session?.user?.id) {
-    return { ok: false as const, code: "UNAUTHENTICATED" };
+  let playerId: string;
+  try {
+    playerId = await ensureGuestPlayerId(session?.user?.id);
+  } catch (error) {
+    console.error("[kelvi] guest session failed", error);
+    return {
+      ok: false as const,
+      code: "UNAUTHENTICATED",
+      message: "Could not open a guest seat. Try again.",
+    };
   }
   try {
     const opened = await openKelvi(prisma, {
-      playerId: session.user.id,
+      playerId,
       venueId,
     });
     return { ok: true as const, opened };
@@ -45,8 +52,13 @@ export async function openLiveKelviAction(venueId?: string) {
 
 export async function submitKelviAction(input: unknown) {
   const session = await auth();
-  if (!session?.user?.id) {
-    return { ok: false as const, code: "UNAUTHENTICATED" };
+  const playerId = session?.user?.id;
+  if (!playerId) {
+    return {
+      ok: false as const,
+      code: "UNAUTHENTICATED",
+      message: "Your seat dropped. Open the Kelvi again.",
+    };
   }
   const parsed = submitSchema.safeParse(input);
   if (!parsed.success) {
@@ -54,7 +66,7 @@ export async function submitKelviAction(input: unknown) {
   }
   try {
     const result = await submitKelvi(prisma, {
-      playerId: session.user.id,
+      playerId,
       ...parsed.data,
     });
     return { ok: true as const, ...result };

@@ -17,7 +17,7 @@ export default async function ResultPage({
   params: Promise<{ attemptId: string }>;
 }) {
   const session = await auth();
-  if (!session?.user?.id) redirect("/auth");
+  if (!session?.user?.id) redirect("/play/kelvi");
   const { attemptId } = await params;
   let result;
   try {

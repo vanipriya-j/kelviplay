@@ -1,8 +1,9 @@
 "use client";
 
-import { signIn } from "next-auth/react";
 import { useState, useTransition } from "react";
-import { requestMagicLinkAction } from "@/lib/actions/auth";
+import { signIn } from "next-auth/react";
+import { requestMagicLinkAction, enterDemoAction } from "@/lib/actions/auth";
+import { enterAsGuestAction } from "@/lib/actions/guest";
 import { AppShell } from "@/components/layout/AppShell";
 import { Wordmark } from "@/components/brand/Wordmark";
 
@@ -31,9 +32,9 @@ export function AuthForm({
   const [pending, start] = useTransition();
 
   async function enterAsGuest() {
-    const result = await signIn("kelvi", { kind: "guest", redirect: false });
-    if (result?.error) {
-      setError(AUTH_ERRORS[result.error] ?? AUTH_ERRORS.Default);
+    const result = await enterAsGuestAction();
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
     window.location.assign(next);
@@ -129,13 +130,9 @@ export function AuthForm({
                 type="button"
                 onClick={() => {
                   void (async () => {
-                    const result = await signIn("kelvi", {
-                      kind: "demo",
-                      demoKey: name,
-                      redirect: false,
-                    });
-                    if (result?.error) {
-                      setError(AUTH_ERRORS[result.error] ?? AUTH_ERRORS.Default);
+                    const result = await enterDemoAction(name);
+                    if (!result.ok) {
+                      setError(result.error);
                       return;
                     }
                     window.location.assign(next);

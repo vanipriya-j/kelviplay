@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { signIn, useSession } from "next-auth/react";
 import { useState } from "react";
+import { playNowAction } from "@/lib/actions/kelvi";
 import { cn } from "@/lib/utils";
 
 export function PlayNowButton({
@@ -13,7 +13,6 @@ export function PlayNowButton({
   attemptId?: string;
 }) {
   const router = useRouter();
-  const { status } = useSession();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,14 +24,7 @@ export function PlayNowButton({
         router.push(`/play/kelvi/result/${attemptId}`);
         return;
       }
-      if (status !== "authenticated") {
-        const result = await signIn("kelvi", { kind: "guest", redirect: false });
-        if (result?.error) {
-          setError("Could not open a guest seat. Try again in a moment.");
-          setPending(false);
-          return;
-        }
-      }
+      await playNowAction();
       router.push("/play/kelvi/live");
     } catch {
       setError("Could not open this Kelvi. Try again.");
