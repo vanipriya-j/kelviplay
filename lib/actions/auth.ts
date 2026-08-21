@@ -98,3 +98,8 @@ export async function enterDemoAction(demoKey: string) {
   await setPlayerSessionCookie(player);
   return { ok: true as const };
 }
+
+export async function signOutAction() {
+  const { clearSessionCookies } = await import("@/lib/session-cookie");
+  await clearSessionCookies();
+}

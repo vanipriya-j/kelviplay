@@ -46,10 +46,29 @@ export class GameError extends Error {
   }
 }
 
+type CachedGame = NonNullable<Awaited<ReturnType<PrismaClient["game"]["findUnique"]>>>;
+let gameCache: { game: CachedGame; expiresAt: number } | null = null;
+
 export async function getKelviGame(db: PrismaClient) {
+  const cached = gameCache;
+  if (cached && cached.expiresAt > Date.now()) return cached.game;
   const game = await db.game.findUnique({ where: { slug: KELVI_SLUG } });
   if (!game) throw new GameError("NO_GAME", "Kelvi has not been seeded.");
+  gameCache = { game, expiresAt: Date.now() + 60_000 };
   return game;
+}
+
+export async function getLiveHeadline(db: PrismaClient, now = new Date()) {
+  return db.question.findFirst({
+    where: {
+      game: { slug: KELVI_SLUG },
+      status: { notIn: ["DRAFT", "ARCHIVED"] },
+      releaseAt: { lte: now },
+      expireAt: { gte: now },
+    },
+    orderBy: { releaseAt: "desc" },
+    select: { id: true, number: true, expireAt: true },
+  });
 }
 
 export async function getLiveQuestion(db: PrismaClient, now = new Date()) {
@@ -82,20 +101,9 @@ export async function getNextQuestion(db: PrismaClient, now = new Date()) {
 
 export async function countPlaying(db: PrismaClient, questionId: string, now = new Date()) {
   const since = new Date(now.getTime() - PRESENCE_TTL_MS);
-  const [presence, recentStarts] = await Promise.all([
-    db.livePresence.count({
-      where: { questionId, lastSeenAt: { gte: since } },
-    }),
-    db.attempt.findMany({
-      where: {
-        questionId,
-        startedAt: { gte: new Date(now.getTime() - 15 * 60 * 1000) },
-      },
-      select: { playerId: true },
-    }),
-  ]);
-  const ids = new Set(recentStarts.map((row) => row.playerId));
-  return Math.max(presence, ids.size);
+  return db.livePresence.count({
+    where: { questionId, lastSeenAt: { gte: since } },
+  });
 }
 
 export async function heartbeatPresence(

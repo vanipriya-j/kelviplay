@@ -1,18 +1,17 @@
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getLeaderboardState } from "@/lib/game/home";
+import { existingPlayerId } from "@/lib/play-session";
 import { formatResponseSeconds } from "@/lib/game/time";
-import { AppShell, BottomNav } from "@/components/layout/AppShell";
 import { RankList, pointsRows, speedRows } from "@/components/kelvi/RankList";
 
 export const dynamic = "force-dynamic";
 
 export default async function LeaderboardPage() {
-  const session = await auth();
-  const state = await getLeaderboardState(prisma, session?.user?.id);
+  const playerId = await existingPlayerId();
+  const state = await getLeaderboardState(prisma, playerId);
 
   return (
-    <AppShell footer={<BottomNav current="board" />}>
+    <>
       <p className="text-center text-[10px] tracking-[0.32em] uppercase text-muted">Kelvi weekly</p>
       <h1 className="font-serif mt-3 text-center text-4xl">Play. Stay sharp. Top the week.</h1>
       <p className="mt-3 text-center text-sm text-muted">₹1,000 Aarla voucher · Pick your Aarla.</p>
@@ -60,6 +59,6 @@ export default async function LeaderboardPage() {
       ) : (
         <p className="mt-10 text-center text-sm text-muted">Play today’s Kelvi to enter the week.</p>
       )}
-    </AppShell>
+    </>
   );
 }

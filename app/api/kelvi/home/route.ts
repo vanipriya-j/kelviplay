@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getHomeState } from "@/lib/game/home";
+import { existingPlayerId } from "@/lib/play-session";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const session = await auth();
-  const state = await getHomeState(prisma, session?.user?.id);
+  const playerId = await existingPlayerId();
+  const state = await getHomeState(prisma, playerId);
   return NextResponse.json(state);
 }
