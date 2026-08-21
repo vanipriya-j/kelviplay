@@ -244,6 +244,7 @@ export async function getLeaderboardState(db: PrismaClient, playerId?: string | 
 }
 
 export async function getProfileState(db: PrismaClient, playerId: string) {
+  try {
   const player = await db.player.findUnique({ where: { id: playerId } });
   if (!player) return null;
   let game: { id: string } | null = null;
@@ -330,4 +331,8 @@ export async function getProfileState(db: PrismaClient, playerId: string) {
       accuracy: row.played ? Math.round((row.correct / row.played) * 100) : 0,
     })),
   };
+  } catch (error) {
+    console.error("[kelvi] profile state failed", error);
+    return null;
+  }
 }

@@ -28,13 +28,12 @@ export function PlayNowButton({
       if (status !== "authenticated") {
         const result = await signIn("kelvi", { kind: "guest", redirect: false });
         if (result?.error) {
-          setError("Could not open a guest seat. Open /setup if Kelvi tables are not created yet.");
+          setError("Could not open a guest seat. Try again in a moment.");
           setPending(false);
           return;
         }
       }
       router.push("/play/kelvi/live");
-      router.refresh();
     } catch {
       setError("Could not open this Kelvi. Try again.");
       setPending(false);

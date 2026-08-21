@@ -21,25 +21,29 @@ export default function LiveKelviPage() {
     let cancelled = false;
     async function boot() {
       if (status === "loading") return;
-      if (status !== "authenticated") {
-        const signed = await signIn("kelvi", { kind: "guest", redirect: false });
-        if (signed?.error) {
-          setError("Could not open a guest seat. If this is a fresh room, open /setup once.");
+      try {
+        if (status !== "authenticated") {
+          const signed = await signIn("kelvi", { kind: "guest", redirect: false });
+          if (signed?.error) {
+            setError("Could not open a guest seat. Try again in a moment.");
+            return;
+          }
           return;
         }
-        return;
+        const result = await openLiveKelviAction();
+        if (cancelled) return;
+        if (!result.ok) {
+          setError(result.message ?? "The Kelvi just slipped away.");
+          return;
+        }
+        if (result.opened.alreadySubmitted) {
+          router.replace(`/play/kelvi/result/${result.opened.attemptId}`);
+          return;
+        }
+        setOpened(result);
+      } catch {
+        if (!cancelled) setError("Could not open this Kelvi. Try again.");
       }
-      const result = await openLiveKelviAction();
-      if (cancelled) return;
-      if (!result.ok) {
-        setError(result.message ?? "The Kelvi just slipped away.");
-        return;
-      }
-      if (result.opened.alreadySubmitted) {
-        router.replace(`/play/kelvi/result/${result.opened.attemptId}`);
-        return;
-      }
-      setOpened(result);
     }
     void boot();
     return () => {

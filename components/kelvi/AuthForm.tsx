@@ -10,8 +10,8 @@ const googleEnabled = Boolean(process.env.NEXT_PUBLIC_GOOGLE_AUTH);
 const demoEnabled = process.env.NODE_ENV !== "production";
 
 const AUTH_ERRORS: Record<string, string> = {
-  Configuration: "Sign-in is not fully configured. Set AUTH_SECRET, then open /setup.",
-  CredentialsSignin: "That sign-in did not work. Try guest play, or seed demo players from /setup.",
+  Configuration: "Kelvi couldn't start a session. Try Play as guest.",
+  CredentialsSignin: "That sign-in did not work. Try Play as guest.",
   AccessDenied: "That account cannot enter.",
   Verification: "That link has expired. Request a new one.",
   Default: "Sign-in hit a snag. Try again, or play as guest.",
@@ -29,6 +29,15 @@ export function AuthForm({
     errorCode ? AUTH_ERRORS[errorCode] ?? AUTH_ERRORS.Default : null,
   );
   const [pending, start] = useTransition();
+
+  async function enterAsGuest() {
+    const result = await signIn("kelvi", { kind: "guest", redirect: false });
+    if (result?.error) {
+      setError(AUTH_ERRORS[result.error] ?? AUTH_ERRORS.Default);
+      return;
+    }
+    window.location.assign(next);
+  }
 
   return (
     <AppShell>
@@ -55,12 +64,17 @@ export function AuthForm({
             event.preventDefault();
             const form = new FormData(event.currentTarget);
             start(async () => {
-              const result = await requestMagicLinkAction({
-                email: String(form.get("email") ?? ""),
-                displayName: String(form.get("displayName") ?? ""),
-              });
-              if (!result.ok) setError(result.error);
-              else setPreview(result.previewUrl);
+              setError(null);
+              try {
+                const result = await requestMagicLinkAction({
+                  email: String(form.get("email") ?? ""),
+                  displayName: String(form.get("displayName") ?? ""),
+                });
+                if (!result.ok) setError(result.error);
+                else setPreview(result.previewUrl);
+              } catch {
+                setError("Could not start email sign-in. Try Play as guest.");
+              }
             });
           }}
         >
@@ -88,9 +102,9 @@ export function AuthForm({
 
         {preview ? (
           <p className="text-sm">
-            Demo link:{" "}
+            Email is not wired yet. Open your sign-in link:{" "}
             <a className="underline" href={preview}>
-              open magic link
+              enter Kelvi
             </a>
           </p>
         ) : null}
@@ -98,7 +112,7 @@ export function AuthForm({
 
         <button
           type="button"
-          onClick={() => signIn("kelvi", { kind: "guest", callbackUrl: next })}
+          onClick={() => void enterAsGuest()}
           className="w-full py-3 text-xs tracking-[0.18em] uppercase text-muted"
         >
           Play as guest
@@ -113,9 +127,20 @@ export function AuthForm({
               <button
                 key={name}
                 type="button"
-                onClick={() =>
-                  signIn("kelvi", { kind: "demo", demoKey: name, callbackUrl: next })
-                }
+                onClick={() => {
+                  void (async () => {
+                    const result = await signIn("kelvi", {
+                      kind: "demo",
+                      demoKey: name,
+                      redirect: false,
+                    });
+                    if (result?.error) {
+                      setError(AUTH_ERRORS[result.error] ?? AUTH_ERRORS.Default);
+                      return;
+                    }
+                    window.location.assign(next);
+                  })();
+                }}
                 className="rounded-full border border-rule px-3 py-1 text-xs"
               >
                 {name}

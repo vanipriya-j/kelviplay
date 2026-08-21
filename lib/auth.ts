@@ -2,8 +2,11 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import Apple from "next-auth/providers/apple";
+import { ignoreStaleAuthUrl } from "./app-url";
 import { prisma } from "./db";
 import { publicName } from "./utils";
+
+ignoreStaleAuthUrl();
 
 const demoEnabled =
   process.env.AUTH_DEMO === "true" || process.env.NODE_ENV !== "production";
@@ -14,6 +17,7 @@ function guestName() {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  secret: process.env.AUTH_SECRET,
   trustHost: true,
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 30 },
   pages: {
@@ -124,28 +128,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = String(profile.email);
         const picture = "picture" in profile ? String(profile.picture ?? "") : "";
         const name = "name" in profile ? String(profile.name ?? email.split("@")[0]) : email;
-        const player = await prisma.player.upsert({
-          where: { email },
-          update: {
-            emailVerified: new Date(),
-            image: picture || undefined,
-            isGuest: false,
-          },
-          create: {
-            email,
-            emailVerified: new Date(),
-            displayName: publicName(name, "Player"),
-            name,
-            image: picture || null,
-            isGuest: false,
-          },
-        });
-        token.userId = player.id;
-        token.displayName = player.displayName;
-        token.isAdmin = player.isAdmin;
-        token.isGuest = player.isGuest;
-        token.email = player.email;
-        token.picture = player.image;
+        try {
+          const player = await prisma.player.upsert({
+            where: { email },
+            update: {
+              emailVerified: new Date(),
+              image: picture || undefined,
+              isGuest: false,
+            },
+            create: {
+              email,
+              emailVerified: new Date(),
+              displayName: publicName(name, "Player"),
+              name,
+              image: picture || null,
+              isGuest: false,
+            },
+          });
+          token.userId = player.id;
+          token.displayName = player.displayName;
+          token.isAdmin = player.isAdmin;
+          token.isGuest = player.isGuest;
+          token.email = player.email;
+          token.picture = player.image;
+        } catch (error) {
+          console.error("[kelvi] google jwt upsert failed", error);
+        }
         return token;
       }
 

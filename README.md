@@ -83,6 +83,7 @@ npm run build
 ## Production notes
 
 - Set `AUTH_SECRET` and `DATABASE_URL` (Supabase transaction pooler :6543). `DIRECT_URL` is optional.
+- On Vercel, leave `AUTH_URL` unset (or set it to the real host). A leftover `localhost` AUTH_URL makes Auth.js show “Sign-in is not fully configured.”
 - On Vercel, the existing kelviplay `DATABASE_URL` is enough — same pooler URI as Aarla OS. Session-pooler URIs are rewritten to port 6543 unless `DATABASE_POOL_MODE=session`. Prisma also adds `pgbouncer=true` and `connection_limit=1` on Vercel.
 - First deploy: add `SETUP_SECRET` on Vercel (do not rely on revealing `AUTH_SECRET`), open `/setup`, paste that value. That creates schema `kelvi` and seeds questions. It does not touch Aarla OS `public` tables.
 - Add `GOOGLE_CLIENT_ID` / `APPLE_ID` when those providers should appear.

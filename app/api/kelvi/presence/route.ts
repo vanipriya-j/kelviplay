@@ -16,9 +16,14 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const parsed = z.object({ questionId: z.string().min(1) }).safeParse(body);
   if (!parsed.success) return NextResponse.json({ ok: false }, { status: 400 });
-  await heartbeatPresence(prisma, {
-    questionId: parsed.data.questionId,
-    playerId: session.user.id,
-  });
+  try {
+    await heartbeatPresence(prisma, {
+      questionId: parsed.data.questionId,
+      playerId: session.user.id,
+    });
+  } catch (error) {
+    console.error("[kelvi] presence failed", error);
+    return NextResponse.json({ ok: false }, { status: 503 });
+  }
   return NextResponse.json({ ok: true });
 }

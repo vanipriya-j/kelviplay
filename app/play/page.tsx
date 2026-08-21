@@ -8,7 +8,13 @@ import { getLiveQuestion } from "@/lib/game/engine";
 export const dynamic = "force-dynamic";
 
 export default async function PlayLandingPage() {
-  const [session, live] = await Promise.all([auth(), getLiveQuestion(prisma)]);
+  const session = await auth();
+  let live = null;
+  try {
+    live = await getLiveQuestion(prisma);
+  } catch (error) {
+    console.error("[kelvi] play landing live lookup failed", error);
+  }
 
   return (
     <AppShell>
