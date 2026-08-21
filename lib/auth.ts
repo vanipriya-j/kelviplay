@@ -2,8 +2,11 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import Apple from "next-auth/providers/apple";
+import { ignoreStaleAuthUrl } from "./app-url";
 import { prisma } from "./db";
 import { publicName } from "./utils";
+
+ignoreStaleAuthUrl();
 
 const demoEnabled =
   process.env.AUTH_DEMO === "true" || process.env.NODE_ENV !== "production";
@@ -14,6 +17,7 @@ function guestName() {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  secret: process.env.AUTH_SECRET,
   trustHost: true,
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 30 },
   pages: {
