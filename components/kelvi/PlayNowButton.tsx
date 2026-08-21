@@ -24,7 +24,12 @@ export function PlayNowButton({
         router.push(`/play/kelvi/result/${attemptId}`);
         return;
       }
-      await playNowAction();
+      const result = await playNowAction();
+      if (!result.ok) {
+        setError(result.error);
+        setPending(false);
+        return;
+      }
       router.push("/play/kelvi/live");
     } catch {
       setError("Could not open this Kelvi. Try again.");
