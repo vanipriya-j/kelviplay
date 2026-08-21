@@ -1,5 +1,6 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
+import { authSecret } from "@/lib/runtime-env";
 
 export async function proxy(req: NextRequest) {
   if (!req.nextUrl.pathname.startsWith("/admin")) {
@@ -8,7 +9,7 @@ export async function proxy(req: NextRequest) {
 
   const token = await getToken({
     req,
-    secret: process.env.AUTH_SECRET,
+    secret: authSecret() || undefined,
   });
 
   if (!token?.isAdmin) {
