@@ -25,4 +25,21 @@ describe("runtime env", () => {
       process.env.NEXTAUTH_SECRET = prevNext;
     }
   });
+
+  it("falls back to SETUP_SECRET and copies it onto AUTH_SECRET", () => {
+    const prevAuth = process.env.AUTH_SECRET;
+    const prevNext = process.env.NEXTAUTH_SECRET;
+    const prevSetup = process.env.SETUP_SECRET;
+    delete process.env.AUTH_SECRET;
+    delete process.env.NEXTAUTH_SECRET;
+    process.env.SETUP_SECRET = "setup-only-secret";
+    try {
+      expect(authSecret()).toBe("setup-only-secret");
+      expect(process.env.AUTH_SECRET).toBe("setup-only-secret");
+    } finally {
+      process.env.AUTH_SECRET = prevAuth;
+      process.env.NEXTAUTH_SECRET = prevNext;
+      process.env.SETUP_SECRET = prevSetup;
+    }
+  });
 });

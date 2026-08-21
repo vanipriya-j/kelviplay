@@ -1,6 +1,7 @@
 "use server";
 
 import { isMissingAuthSecret, playerIdForPlay } from "@/lib/play-session";
+import { missingAuthSecretMessage } from "@/lib/runtime-env";
 
 export async function enterAsGuestAction() {
   try {
@@ -11,7 +12,7 @@ export async function enterAsGuestAction() {
     return {
       ok: false as const,
       error: isMissingAuthSecret(error)
-        ? "Kelvi is missing AUTH_SECRET on this Vercel deployment."
+        ? missingAuthSecretMessage()
         : "Could not open a guest seat. Try again.",
     };
   }

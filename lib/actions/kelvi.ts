@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/db";
 import { GameError, openKelvi, submitKelvi } from "@/lib/game/engine";
 import { existingPlayerId, isMissingAuthSecret, playerIdForPlay } from "@/lib/play-session";
+import { missingAuthSecretMessage } from "@/lib/runtime-env";
 import { z } from "zod";
 
 const submitSchema = z.object({
@@ -21,7 +22,7 @@ export async function playNowAction() {
     return {
       ok: false as const,
       error: isMissingAuthSecret(error)
-        ? "Kelvi is missing AUTH_SECRET on this Vercel deployment."
+        ? missingAuthSecretMessage()
         : "Could not open this Kelvi. Try again.",
     };
   }
@@ -37,7 +38,7 @@ export async function openLiveKelviAction(venueId?: string) {
       ok: false as const,
       code: "UNAUTHENTICATED",
       message: isMissingAuthSecret(error)
-        ? "Kelvi is missing AUTH_SECRET on this Vercel deployment."
+        ? missingAuthSecretMessage()
         : "Could not open a guest seat. Try again.",
     };
   }
