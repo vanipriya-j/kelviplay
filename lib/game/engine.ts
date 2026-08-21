@@ -155,15 +155,29 @@ export async function openKelvi(
         venueId: input.venueId ?? null,
       },
     });
-    attempt = await db.attempt.create({
-      data: {
-        playerId: input.playerId,
-        questionId: live.id,
-        gameSessionId: session.id,
-        venueId: input.venueId ?? null,
-        startedAt: new Date(),
-      },
-    });
+    try {
+      attempt = await db.attempt.create({
+        data: {
+          playerId: input.playerId,
+          questionId: live.id,
+          gameSessionId: session.id,
+          venueId: input.venueId ?? null,
+          startedAt: new Date(),
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        attempt = await db.attempt.findUnique({
+          where: {
+            playerId_questionId: { playerId: input.playerId, questionId: live.id },
+          },
+        });
+      }
+      if (!attempt) throw error;
+    }
   }
 
   await heartbeatPresence(db, { questionId: live.id, playerId: input.playerId });

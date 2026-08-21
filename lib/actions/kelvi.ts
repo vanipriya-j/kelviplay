@@ -34,7 +34,12 @@ export async function openLiveKelviAction(venueId?: string) {
     if (error instanceof GameError) {
       return { ok: false as const, code: error.code, message: error.message };
     }
-    throw error;
+    console.error("[kelvi] open live failed", error);
+    return {
+      ok: false as const,
+      code: "UNAVAILABLE",
+      message: "Could not open this Kelvi. Try again.",
+    };
   }
 }
 
@@ -57,6 +62,11 @@ export async function submitKelviAction(input: unknown) {
     if (error instanceof GameError) {
       return { ok: false as const, code: error.code, message: error.message };
     }
-    throw error;
+    console.error("[kelvi] submit failed", error);
+    return {
+      ok: false as const,
+      code: "UNAVAILABLE",
+      message: "Could not lock that in. Try again.",
+    };
   }
 }

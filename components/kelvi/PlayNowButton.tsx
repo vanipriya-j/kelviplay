@@ -34,7 +34,6 @@ export function PlayNowButton({
         }
       }
       router.push("/play/kelvi/live");
-      router.refresh();
     } catch {
       setError("Could not open this Kelvi. Try again.");
       setPending(false);

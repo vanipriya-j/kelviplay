@@ -19,7 +19,13 @@ export default async function ResultPage({
   const session = await auth();
   if (!session?.user?.id) redirect("/auth");
   const { attemptId } = await params;
-  const result = await getAttemptResult(prisma, attemptId, session.user.id);
+  let result;
+  try {
+    result = await getAttemptResult(prisma, attemptId, session.user.id);
+  } catch (error) {
+    console.error("[kelvi] result lookup failed", error);
+    redirect("/play/kelvi");
+  }
   if (!result) notFound();
 
   const variant = pickShareVariant({

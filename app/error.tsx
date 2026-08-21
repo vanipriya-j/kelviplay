@@ -15,11 +15,7 @@ export default function ErrorPage({
       <Wordmark />
       <h1 className="font-serif mt-14 text-4xl leading-tight">The room hiccuped.</h1>
       <p className="mt-4 text-sm leading-relaxed text-muted">
-        Kelvi is still here. If the room is new, open{" "}
-        <Link href="/setup" className="text-ink">
-          /setup
-        </Link>{" "}
-        once and try again.
+        Kelvi is still here. Try again, or go back to the drop.
       </p>
       <div className="mt-10 space-y-3">
         <button

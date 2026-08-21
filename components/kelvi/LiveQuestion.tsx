@@ -32,18 +32,23 @@ export function LiveQuestion({
     if (pending || chosen) return;
     setChosen(answer);
     startTransition(async () => {
-      const result = await submitKelviAction({
-        questionId: question.id,
-        answer,
-        clientOpenedAt: opened,
-        clientSubmittedAt: new Date().toISOString(),
-      });
-      if (!result.ok) {
-        setError(result.message ?? "Could not lock that in.");
+      try {
+        const result = await submitKelviAction({
+          questionId: question.id,
+          answer,
+          clientOpenedAt: opened,
+          clientSubmittedAt: new Date().toISOString(),
+        });
+        if (!result.ok) {
+          setError(result.message ?? "Could not lock that in.");
+          setChosen(null);
+          return;
+        }
+        router.replace(`/play/kelvi/result/${result.attemptId}`);
+      } catch {
+        setError("Could not lock that in. Try again.");
         setChosen(null);
-        return;
       }
-      router.replace(`/play/kelvi/result/${result.attemptId}`);
     });
   }
 

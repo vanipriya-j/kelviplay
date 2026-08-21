@@ -124,28 +124,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = String(profile.email);
         const picture = "picture" in profile ? String(profile.picture ?? "") : "";
         const name = "name" in profile ? String(profile.name ?? email.split("@")[0]) : email;
-        const player = await prisma.player.upsert({
-          where: { email },
-          update: {
-            emailVerified: new Date(),
-            image: picture || undefined,
-            isGuest: false,
-          },
-          create: {
-            email,
-            emailVerified: new Date(),
-            displayName: publicName(name, "Player"),
-            name,
-            image: picture || null,
-            isGuest: false,
-          },
-        });
-        token.userId = player.id;
-        token.displayName = player.displayName;
-        token.isAdmin = player.isAdmin;
-        token.isGuest = player.isGuest;
-        token.email = player.email;
-        token.picture = player.image;
+        try {
+          const player = await prisma.player.upsert({
+            where: { email },
+            update: {
+              emailVerified: new Date(),
+              image: picture || undefined,
+              isGuest: false,
+            },
+            create: {
+              email,
+              emailVerified: new Date(),
+              displayName: publicName(name, "Player"),
+              name,
+              image: picture || null,
+              isGuest: false,
+            },
+          });
+          token.userId = player.id;
+          token.displayName = player.displayName;
+          token.isAdmin = player.isAdmin;
+          token.isGuest = player.isGuest;
+          token.email = player.email;
+          token.picture = player.image;
+        } catch (error) {
+          console.error("[kelvi] google jwt upsert failed", error);
+        }
         return token;
       }
 
