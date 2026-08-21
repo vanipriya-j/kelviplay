@@ -21,10 +21,9 @@ export default function SetupPage() {
         <span className="text-ink">public</span> stay untouched.
       </p>
       <p className="mt-3 text-sm leading-relaxed text-muted">
-        Paste <span className="text-ink">AUTH_SECRET</span> from Vercel → kelviplay → Settings →
-        Environment Variables. Click the eye to reveal it. That value is the Auth.js session key
-        already on this project — not a new password. If you later add{" "}
-        <span className="text-ink">SETUP_SECRET</span>, use that instead.
+        Do not try to unmask <span className="text-ink">AUTH_SECRET</span> — Vercel will not reveal
+        sensitive values. Add a new env var named <span className="text-ink">SETUP_SECRET</span>{" "}
+        (Production and Preview), copy the value before you save, redeploy, then paste it here.
       </p>
 
       <form
@@ -38,13 +37,13 @@ export default function SetupPage() {
         }}
       >
         <label className="block text-xs tracking-[0.18em] uppercase text-muted">
-          AUTH_SECRET from Vercel
+          SETUP_SECRET
           <input
             name="secret"
             type="password"
             required
             autoComplete="off"
-            placeholder="the value behind the lock"
+            placeholder="the value you saved when creating SETUP_SECRET"
             className="mt-2 w-full rounded-2xl border border-rule bg-cloud px-4 py-3 text-sm tracking-normal text-ink normal-case"
           />
         </label>

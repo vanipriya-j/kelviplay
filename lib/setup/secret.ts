@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "crypto";
 
-/** Same idea as Aarla OS `/setup`. AUTH_SECRET is already on kelviplay Vercel. */
+/** /setup password: SETUP_SECRET (preferred). AUTH_SECRET is only a local fallback. */
 export function setupSecret(): string | null {
   return process.env.SETUP_SECRET?.trim() || process.env.AUTH_SECRET?.trim() || null;
 }
