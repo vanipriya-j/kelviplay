@@ -24,7 +24,7 @@ export default function LiveKelviPage() {
       if (status !== "authenticated") {
         const signed = await signIn("kelvi", { kind: "guest", redirect: false });
         if (signed?.error) {
-          setError("Could not open a guest seat. If this is a fresh install, run npm run db:setup.");
+          setError("Could not open a guest seat. If this is a fresh room, open /setup once.");
           return;
         }
         return;

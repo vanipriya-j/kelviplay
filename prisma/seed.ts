@@ -4,10 +4,6 @@ import { resolveDirectUrl } from "../lib/db-url";
 import { DEFAULT_SCORING } from "../lib/game/scoring";
 import { getWeekStart, zonedParts } from "../lib/game/time";
 
-const prisma = new PrismaClient({
-  datasources: { db: { url: resolveDirectUrl() } },
-});
-
 const CATEGORIES = [
   ["carnatic-music", "Carnatic Music"],
   ["indian-classical-arts", "Indian Classical Arts"],
@@ -440,50 +436,50 @@ function between(seed: string, min: number, max: number) {
   return min + (n / 10_000) * (max - min);
 }
 
-async function main() {
+export async function seedKelvi(db: PrismaClient) {
   const now = new Date();
   const parts = zonedParts(now);
 
-  await prisma.livePresence.deleteMany();
-  await prisma.playerAchievement.deleteMany();
-  await prisma.reward.deleteMany();
-  await prisma.weeklyScore.deleteMany();
-  await prisma.playerCategoryStats.deleteMany();
-  await prisma.playerGameStats.deleteMany();
-  await prisma.attempt.deleteMany();
-  await prisma.gameSession.deleteMany();
-  await prisma.questionOption.deleteMany();
-  await prisma.question.deleteMany();
-  await prisma.magicLink.deleteMany();
-  await prisma.account.deleteMany();
-  await prisma.session.deleteMany();
-  await prisma.player.deleteMany();
-  await prisma.achievement.deleteMany();
-  await prisma.category.deleteMany();
-  await prisma.venue.deleteMany();
-  await prisma.game.deleteMany();
-  await prisma.appConfig.deleteMany();
+  await db.livePresence.deleteMany();
+  await db.playerAchievement.deleteMany();
+  await db.reward.deleteMany();
+  await db.weeklyScore.deleteMany();
+  await db.playerCategoryStats.deleteMany();
+  await db.playerGameStats.deleteMany();
+  await db.attempt.deleteMany();
+  await db.gameSession.deleteMany();
+  await db.questionOption.deleteMany();
+  await db.question.deleteMany();
+  await db.magicLink.deleteMany();
+  await db.account.deleteMany();
+  await db.session.deleteMany();
+  await db.player.deleteMany();
+  await db.achievement.deleteMany();
+  await db.category.deleteMany();
+  await db.venue.deleteMany();
+  await db.game.deleteMany();
+  await db.appConfig.deleteMany();
 
   for (const [slug, name] of GAMES) {
-    await prisma.game.create({ data: { slug, name } });
+    await db.game.create({ data: { slug, name } });
   }
-  const kelvi = await prisma.game.findUniqueOrThrow({ where: { slug: "kelvi" } });
+  const kelvi = await db.game.findUniqueOrThrow({ where: { slug: "kelvi" } });
 
   const categoryBySlug = new Map<string, string>();
   for (const [slug, name] of CATEGORIES) {
-    const row = await prisma.category.create({ data: { slug, name } });
+    const row = await db.category.create({ data: { slug, name } });
     categoryBySlug.set(slug, row.id);
   }
 
   for (const [slug, name, city, type] of VENUES) {
-    await prisma.venue.create({ data: { slug, name, city, type } });
+    await db.venue.create({ data: { slug, name, city, type } });
   }
 
   for (const achievement of ACHIEVEMENTS) {
-    await prisma.achievement.create({ data: achievement });
+    await db.achievement.create({ data: achievement });
   }
 
-  await prisma.appConfig.create({
+  await db.appConfig.create({
     data: {
       key: "kelvi.scoring",
       value: DEFAULT_SCORING as object,
@@ -494,7 +490,7 @@ async function main() {
   for (const item of QUESTIONS) {
     const releaseAt = new Date(now.getTime() + item.offsetHours * 60 * 60 * 1000);
     const expireAt = new Date(releaseAt.getTime() + item.durationHours * 60 * 60 * 1000);
-    const created = await prisma.question.create({
+    const created = await db.question.create({
       data: {
         gameId: kelvi.id,
         number: item.number,
@@ -524,7 +520,7 @@ async function main() {
     questionIds.set(item.number, created.id);
   }
 
-  const admin = await prisma.player.create({
+  const admin = await db.player.create({
     data: {
       email: "admin@aarla.play",
       displayName: "Aarla",
@@ -539,7 +535,7 @@ async function main() {
   const playerRows = [];
   for (const [displayName, email, city] of PLAYERS) {
     playerRows.push(
-      await prisma.player.create({
+      await db.player.create({
         data: {
           email,
           displayName,
@@ -588,7 +584,7 @@ async function main() {
                   : 10)
         : 0;
 
-      await prisma.attempt.create({
+      await db.attempt.create({
         data: {
           playerId: player.id,
           questionId: qid,
@@ -635,7 +631,7 @@ async function main() {
       const qid = questionIds.get(184)!;
       const responseMs = Math.round(between(`${player.displayName}-184-t`, 1600, 7200));
       const startedAt = new Date(now.getTime() - responseMs - 20_000);
-      await prisma.attempt.create({
+      await db.attempt.create({
         data: {
           playerId: player.id,
           questionId: qid,
@@ -648,7 +644,7 @@ async function main() {
           attemptCount: 1,
         },
       });
-      await prisma.livePresence.create({
+      await db.livePresence.create({
         data: {
           questionId: qid,
           playerId: player.id,
@@ -663,7 +659,7 @@ async function main() {
       bestResponseMs = bestResponseMs == null ? responseMs : Math.min(bestResponseMs, responseMs);
     }
 
-    await prisma.playerGameStats.create({
+    await db.playerGameStats.create({
       data: {
         playerId: player.id,
         gameId: kelvi.id,
@@ -678,7 +674,7 @@ async function main() {
     });
 
     for (const [slug, acc] of categoryAcc) {
-      await prisma.playerCategoryStats.create({
+      await db.playerCategoryStats.create({
         data: {
           playerId: player.id,
           categoryId: categoryBySlug.get(slug)!,
@@ -689,7 +685,7 @@ async function main() {
     }
 
     for (const [key, bucket] of weekPoints) {
-      await prisma.weeklyScore.create({
+      await db.weeklyScore.create({
         data: {
           playerId: player.id,
           gameId: kelvi.id,
@@ -699,7 +695,7 @@ async function main() {
       });
     }
 
-    const achievements = await prisma.achievement.findMany();
+    const achievements = await db.achievement.findMany();
     const codes: string[] = [];
     if (bestStreak >= 3) codes.push("STREAK_3");
     if (bestStreak >= 7) codes.push("STREAK_7");
@@ -708,7 +704,7 @@ async function main() {
     for (const code of codes) {
       const achievement = achievements.find((row) => row.code === code);
       if (!achievement) continue;
-      await prisma.playerAchievement.create({
+      await db.playerAchievement.create({
         data: { playerId: player.id, achievementId: achievement.id },
       });
     }
@@ -716,7 +712,7 @@ async function main() {
 
   const lastWeek = new Date(getWeekStart(now).getTime() - 7 * 24 * 60 * 60 * 1000);
   const meera = playerRows.find((p) => p.displayName === "Meera")!;
-  await prisma.reward.create({
+  await db.reward.create({
     data: {
       weekStart: lastWeek,
       type: "WEEKLY_CHAMPION",
@@ -732,10 +728,21 @@ async function main() {
   console.log(`Local time parts: ${parts.weekday} ${parts.day}/${parts.month} ${parts.hour}:${parts.minute} IST-ish`);
 }
 
-main()
-  .then(() => prisma.$disconnect())
-  .catch(async (error) => {
+async function main() {
+  const db = new PrismaClient({
+    datasources: { db: { url: resolveDirectUrl() } },
+  });
+  try {
+    await seedKelvi(db);
+  } finally {
+    await db.$disconnect();
+  }
+}
+
+const isCli = /seed\.(ts|js)$/.test(process.argv[1] ?? "");
+if (isCli) {
+  main().catch((error) => {
     console.error(error);
-    await prisma.$disconnect();
     process.exit(1);
   });
+}

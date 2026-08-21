@@ -3,11 +3,10 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
   // Isolated from Aarla OS commerce tables in `public`.
-  schemas   = ["kelvi"]
+  schemas  = ["kelvi"]
 }
 
 /// Aarla Play identity. Shared across Kelvi and future games.

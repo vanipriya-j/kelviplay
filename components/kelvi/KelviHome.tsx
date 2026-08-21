@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { PlayNowButton } from "./PlayNowButton";
 import { LiveDot, Wordmark } from "@/components/brand/Wordmark";
 import type { getHomeState } from "@/lib/game/home";
@@ -63,8 +64,12 @@ export function KelviHome({ initial }: { initial: HomeState }) {
 
       {state.setupNeeded ? (
         <p className="mt-8 rounded-2xl border border-rule bg-cloud px-4 py-3 text-sm text-muted">
-          Kelvi needs a local database. From the project folder run{" "}
-          <span className="text-ink">npm run db:setup</span>, then refresh.
+          Kelvi is on the Aarla OS database, but schema <span className="text-ink">kelvi</span> is
+          not set up yet. Open{" "}
+          <Link href="/setup" className="text-ink underline decoration-rule underline-offset-4">
+            /setup
+          </Link>{" "}
+          once, then refresh.
         </p>
       ) : null}
 

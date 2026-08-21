@@ -28,7 +28,7 @@ export function PlayNowButton({
       if (status !== "authenticated") {
         const result = await signIn("kelvi", { kind: "guest", redirect: false });
         if (result?.error) {
-          setError("Could not open a guest seat. Run npm run db:setup if this is a fresh install.");
+          setError("Could not open a guest seat. Open /setup if Kelvi tables are not created yet.");
           setPending(false);
           return;
         }

@@ -10,8 +10,8 @@ const googleEnabled = Boolean(process.env.NEXT_PUBLIC_GOOGLE_AUTH);
 const demoEnabled = process.env.NODE_ENV !== "production";
 
 const AUTH_ERRORS: Record<string, string> = {
-  Configuration: "Sign-in is not fully configured. Set AUTH_SECRET and run npm run db:setup.",
-  CredentialsSignin: "That sign-in did not work. Try guest play, or seed demo players with npm run db:setup.",
+  Configuration: "Sign-in is not fully configured. Set AUTH_SECRET, then open /setup.",
+  CredentialsSignin: "That sign-in did not work. Try guest play, or seed demo players from /setup.",
   AccessDenied: "That account cannot enter.",
   Verification: "That link has expired. Request a new one.",
   Default: "Sign-in hit a snag. Try again, or play as guest.",

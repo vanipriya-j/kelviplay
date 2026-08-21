@@ -19,19 +19,21 @@ Kelvi does not ship its own database. It uses the **Aarla OS Supabase** project 
 
 Tables are isolated in schema `kelvi`, so commerce / OS tables in `public` are untouched. `db:setup` never migrates Aarla OS `public` tables. Seed wipes **Kelvi schema data only**.
 
-1. In Supabase: **Connect** → copy the **Transaction pooler** URI (port **6543**) into `DATABASE_URL`.
-2. Copy the **Session pooler** URI (port **5432**) into `DIRECT_URL` (Prisma CLI / `db push` / seed).
+1. In Supabase: **Connect** → copy the **Transaction pooler** URI (port **6543**) into `DATABASE_URL`. On Vercel, this is the same `DATABASE_URL` already set for kelviplay / aarla-os.
+2. Optional: session pooler URI (port **5432**) as `DIRECT_URL`. If omitted, Kelvi derives it from `DATABASE_URL`.
 3. Same database password as Aarla OS. Do not use `db.*.supabase.co` (IPv6-only) or the project API URL.
 
 ```bash
 cp .env.example .env
-# paste the two URIs
+# paste DATABASE_URL
 npm install
 npm run db:setup
 npm run dev
 ```
 
-Or paste `supabase/kelvi-complete.sql` in the Supabase SQL Editor (first time only), then run `npm run db:seed`. `npm run db:setup` is the Prisma path: create schema `kelvi`, push tables, seed.
+Or paste `supabase/kelvi-complete.sql` in the Supabase SQL Editor (first time only), then run `npm run db:seed`. `npm run db:setup` is the Prisma CLI path: create schema `kelvi`, push tables, seed.
+
+On Vercel, `AUTH_SECRET` is marked sensitive and cannot be revealed. Add a new env var **`SETUP_SECRET`** (Production and Preview), save the value yourself, redeploy, then open **`/setup`** and paste that value. That creates schema `kelvi` on the Aarla OS database already configured as `DATABASE_URL`.
 
 Open [http://localhost:3000](http://localhost:3000). It lands on `/play`.
 
@@ -80,8 +82,9 @@ npm run build
 
 ## Production notes
 
-- Set `AUTH_SECRET`, `DATABASE_URL` (Supabase transaction pooler :6543), and `DIRECT_URL` (session pooler :5432).
-- On Vercel, use the **same** `DATABASE_URL` as Aarla OS. Session-pooler URIs are rewritten to port 6543 unless `DATABASE_POOL_MODE=session`. Prisma also adds `pgbouncer=true` and `connection_limit=1` on Vercel.
+- Set `AUTH_SECRET` and `DATABASE_URL` (Supabase transaction pooler :6543). `DIRECT_URL` is optional.
+- On Vercel, the existing kelviplay `DATABASE_URL` is enough — same pooler URI as Aarla OS. Session-pooler URIs are rewritten to port 6543 unless `DATABASE_POOL_MODE=session`. Prisma also adds `pgbouncer=true` and `connection_limit=1` on Vercel.
+- First deploy: add `SETUP_SECRET` on Vercel (do not rely on revealing `AUTH_SECRET`), open `/setup`, paste that value. That creates schema `kelvi` and seeds questions. It does not touch Aarla OS `public` tables.
 - Add `GOOGLE_CLIENT_ID` / `APPLE_ID` when those providers should appear.
 - Magic links currently print a demo URL; wire SMTP before public launch.
 - Voucher redemption is manual in admin. No payments in this MVP.
