@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getProfileState } from "@/lib/game/home";
@@ -11,9 +11,34 @@ export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
   const session = await auth();
-  if (!session?.user?.id) redirect("/auth?next=/play/profile");
+  if (!session?.user?.id) {
+    return (
+      <AppShell footer={<BottomNav current="profile" />}>
+        <p className="text-[10px] tracking-[0.32em] uppercase text-muted">Aarla Play</p>
+        <h1 className="font-serif mt-3 text-5xl leading-tight">Play first.</h1>
+        <p className="mt-4 text-sm text-muted">
+          Open the live Kelvi as guest. Add email later if you want to keep the streak.
+        </p>
+        <Link
+          href="/play/kelvi"
+          className="mt-10 block w-full rounded-full bg-ink py-4 text-center text-sm tracking-[0.22em] text-ivory uppercase"
+        >
+          Back to Kelvi
+        </Link>
+      </AppShell>
+    );
+  }
   const state = await getProfileState(prisma, session.user.id);
-  if (!state) redirect("/auth");
+  if (!state) {
+    return (
+      <AppShell footer={<BottomNav current="profile" />}>
+        <h1 className="font-serif mt-14 text-4xl">Seat not found.</h1>
+        <Link href="/play/kelvi" className="mt-8 inline-block text-sm tracking-[0.18em] uppercase">
+          Back to Kelvi
+        </Link>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell footer={<BottomNav current="profile" />}>

@@ -2,11 +2,11 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import Apple from "next-auth/providers/apple";
-import { ignoreStaleAuthUrl } from "./app-url";
+import { prepareAuthEnv } from "./app-url";
 import { prisma } from "./db";
 import { publicName } from "./utils";
 
-ignoreStaleAuthUrl();
+prepareAuthEnv();
 
 const demoEnabled =
   process.env.AUTH_DEMO === "true" || process.env.NODE_ENV !== "production";
@@ -22,7 +22,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 30 },
   pages: {
     signIn: "/auth",
-    error: "/auth",
+    error: "/play/kelvi",
   },
   providers: [
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET

@@ -3,6 +3,8 @@
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/db";
 import { publicAppUrl } from "@/lib/app-url";
+import { publicName } from "@/lib/utils";
+import { setPlayerSessionCookie } from "@/lib/session-cookie";
 import { z } from "zod";
 
 const requestSchema = z.object({
@@ -44,4 +46,55 @@ export async function requestMagicLinkAction(input: unknown) {
     ok: true as const,
     previewUrl: url,
   };
+}
+
+export async function completeMagicLinkAction(token: string) {
+  const link = await prisma.magicLink.findUnique({ where: { token } });
+  if (!link || link.consumedAt || link.expiresAt < new Date()) {
+    return { ok: false as const, error: "That link has expired. Request a new one." };
+  }
+  const displayName = link.displayName || link.email.split("@")[0];
+  const existing = await prisma.player.findUnique({ where: { email: link.email } });
+  const player =
+    existing ??
+    (await prisma.player.create({
+      data: {
+        email: link.email,
+        emailVerified: new Date(),
+        displayName: publicName(displayName, "Player"),
+        name: displayName,
+        isGuest: false,
+      },
+    }));
+  if (existing?.isGuest) {
+    await prisma.player.update({
+      where: { id: existing.id },
+      data: { isGuest: false, emailVerified: new Date() },
+    });
+  }
+  await prisma.magicLink.update({
+    where: { id: link.id },
+    data: { consumedAt: new Date(), playerId: player.id },
+  });
+  await setPlayerSessionCookie({ ...player, isGuest: false });
+  return { ok: true as const };
+}
+
+export async function enterDemoAction(demoKey: string) {
+  const demoEnabled =
+    process.env.AUTH_DEMO === "true" || process.env.NODE_ENV !== "production";
+  if (!demoEnabled) {
+    return { ok: false as const, error: "Demo seats are off." };
+  }
+  const player = await prisma.player.findFirst({
+    where:
+      demoKey === "admin"
+        ? { isAdmin: true }
+        : { displayName: demoKey, isGuest: false },
+  });
+  if (!player) {
+    return { ok: false as const, error: "That demo seat is not seeded." };
+  }
+  await setPlayerSessionCookie(player);
+  return { ok: true as const };
 }

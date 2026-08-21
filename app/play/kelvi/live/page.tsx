@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { openLiveKelviAction } from "@/lib/actions/kelvi";
 import { AppShell } from "@/components/layout/AppShell";
@@ -10,7 +9,6 @@ import { PresenceBeacon } from "@/components/kelvi/PresenceBeacon";
 import Link from "next/link";
 
 export default function LiveKelviPage() {
-  const { status } = useSession();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [opened, setOpened] = useState<Awaited<
@@ -20,16 +18,7 @@ export default function LiveKelviPage() {
   useEffect(() => {
     let cancelled = false;
     async function boot() {
-      if (status === "loading") return;
       try {
-        if (status !== "authenticated") {
-          const signed = await signIn("kelvi", { kind: "guest", redirect: false });
-          if (signed?.error) {
-            setError("Could not open a guest seat. Try again in a moment.");
-            return;
-          }
-          return;
-        }
         const result = await openLiveKelviAction();
         if (cancelled) return;
         if (!result.ok) {
@@ -49,7 +38,7 @@ export default function LiveKelviPage() {
     return () => {
       cancelled = true;
     };
-  }, [status, router]);
+  }, [router]);
 
   if (error) {
     return (
