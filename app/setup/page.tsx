@@ -20,9 +20,11 @@ export default function SetupPage() {
         <span className="text-ink">kelvi</span> only — commerce tables in{" "}
         <span className="text-ink">public</span> stay untouched.
       </p>
-      <p className="mt-3 text-sm text-muted">
-        Use <span className="text-ink">SETUP_SECRET</span> if you set one, otherwise the same{" "}
-        <span className="text-ink">AUTH_SECRET</span> already on Vercel.
+      <p className="mt-3 text-sm leading-relaxed text-muted">
+        Paste <span className="text-ink">AUTH_SECRET</span> from Vercel → kelviplay → Settings →
+        Environment Variables. Click the eye to reveal it. That value is the Auth.js session key
+        already on this project — not a new password. If you later add{" "}
+        <span className="text-ink">SETUP_SECRET</span>, use that instead.
       </p>
 
       <form
@@ -36,12 +38,13 @@ export default function SetupPage() {
         }}
       >
         <label className="block text-xs tracking-[0.18em] uppercase text-muted">
-          Setup secret
+          AUTH_SECRET from Vercel
           <input
             name="secret"
             type="password"
             required
             autoComplete="off"
+            placeholder="the value behind the lock"
             className="mt-2 w-full rounded-2xl border border-rule bg-cloud px-4 py-3 text-sm tracking-normal text-ink normal-case"
           />
         </label>
