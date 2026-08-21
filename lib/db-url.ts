@@ -27,16 +27,36 @@ export function resolveDatabaseUrl(): string {
   return normalizeDatabaseUrlForRuntime(url);
 }
 
-/** Session / direct URI for Prisma CLI and seed. Do not rewrite to :6543. */
+/**
+ * Session / direct URI for Prisma CLI and seed. Do not rewrite to :6543.
+ * Vercel only needs DATABASE_URL — DIRECT_URL is derived (6543 → 5432).
+ */
 export function resolveDirectUrl(): string {
-  const url = process.env.DIRECT_URL?.trim();
-  if (url) {
-    if (!isPostgresUrl(url)) {
+  const explicit = process.env.DIRECT_URL?.trim();
+  if (explicit) {
+    if (!isPostgresUrl(explicit)) {
       throw new Error("DIRECT_URL must be a Postgres URI (session pooler, port 5432).");
     }
-    return ensureSsl(url);
+    return ensureSsl(explicit);
   }
-  return resolveDatabaseUrl();
+  const raw =
+    process.env.DATABASE_URL?.trim() || process.env.SUPABASE_DB_URL?.trim() || "";
+  if (!isPostgresUrl(raw)) {
+    throw new Error(
+      "DATABASE_URL (or SUPABASE_DB_URL) is not set. Use the Aarla OS Supabase pooler URI.",
+    );
+  }
+  return deriveDirectUrl(raw);
+}
+
+/** Transaction pooler :6543 → session pooler :5432, drop Prisma runtime flags. */
+export function deriveDirectUrl(databaseUrl: string): string {
+  let next = databaseUrl.includes(":6543/")
+    ? databaseUrl.replace(":6543/", ":5432/")
+    : databaseUrl;
+  next = stripQueryParam(next, "pgbouncer");
+  next = stripQueryParam(next, "connection_limit");
+  return ensureSsl(next);
 }
 
 /**
@@ -95,4 +115,12 @@ export function isRemoteSupabaseUrl(url: string): boolean {
     url.includes("supabase.com") ||
     url.includes("pooler.supabase")
   );
+}
+
+function stripQueryParam(url: string, key: string): string {
+  const re = new RegExp(`([?&])${key}=[^&]*`);
+  let next = url.replace(re, "$1");
+  next = next.replace(/[?&]&/g, "$1");
+  next = next.replace(/[?&]$/, "");
+  return next;
 }

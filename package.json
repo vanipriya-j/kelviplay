@@ -11,9 +11,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push",
+    "db:push": "tsx scripts/prisma-cli.ts db push",
     "db:seed": "tsx prisma/seed.ts",
-    "db:setup": "prisma generate && prisma db execute --file supabase/migrations/20260820120000_kelvi_schema.sql && prisma db push && tsx prisma/seed.ts",
+    "db:setup": "prisma generate && tsx scripts/prisma-cli.ts db execute --file supabase/migrations/20260820120000_kelvi_schema.sql && tsx scripts/prisma-cli.ts db push && tsx prisma/seed.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {

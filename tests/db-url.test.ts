@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  deriveDirectUrl,
   isPostgresUrl,
   normalizeDatabaseUrlForRuntime,
   resolvePrismaClientUrl,
@@ -42,5 +43,14 @@ describe("Aarla OS supabase URL", () => {
     } finally {
       process.env.DATABASE_URL = prev;
     }
+  });
+
+  it("derives the session pooler URL from the transaction pooler", () => {
+    const url =
+      "postgresql://postgres.abc:secret@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true";
+    const next = deriveDirectUrl(url);
+    expect(next).toContain(":5432/");
+    expect(next).not.toContain("pgbouncer=");
+    expect(next).toContain("sslmode=require");
   });
 });
