@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { existingPlayerId } from "@/lib/play-session";
 import { z } from "zod";
 
 const profileSchema = z.object({
@@ -12,8 +12,8 @@ const profileSchema = z.object({
 });
 
 export async function updateProfileAction(input: unknown) {
-  const session = await auth();
-  if (!session?.user?.id) return { ok: false as const, error: "Sign in first." };
+  const playerId = await existingPlayerId();
+  if (!playerId) return { ok: false as const, error: "Sign in first." };
   const parsed = profileSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "Check your details." };
 
@@ -23,7 +23,7 @@ export async function updateProfileAction(input: unknown) {
   }
 
   await prisma.player.update({
-    where: { id: session.user.id },
+    where: { id: playerId },
     data: {
       displayName: parsed.data.displayName.trim(),
       name: parsed.data.displayName.trim(),

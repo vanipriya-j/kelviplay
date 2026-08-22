@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getAttemptResult } from "@/lib/game/engine";
+import { existingPlayerId } from "@/lib/play-session";
 import { formatResponseSeconds } from "@/lib/game/time";
 import { pickShareVariant } from "@/lib/share/payload";
-import { AppShell, BottomNav } from "@/components/layout/AppShell";
 import { ShareResultButton } from "@/components/kelvi/ShareResultButton";
 import { LeaderboardLink, RankList, speedRows } from "@/components/kelvi/RankList";
 
@@ -16,12 +15,12 @@ export default async function ResultPage({
 }: {
   params: Promise<{ attemptId: string }>;
 }) {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/play/kelvi");
+  const playerId = await existingPlayerId();
+  if (!playerId) redirect("/play/kelvi");
   const { attemptId } = await params;
   let result;
   try {
-    result = await getAttemptResult(prisma, attemptId, session.user.id);
+    result = await getAttemptResult(prisma, attemptId, playerId);
   } catch (error) {
     console.error("[kelvi] result lookup failed", error);
     redirect("/play/kelvi");
@@ -35,7 +34,7 @@ export default async function ResultPage({
   });
 
   return (
-    <AppShell footer={<BottomNav current="home" />}>
+    <>
       <p className="text-[10px] tracking-[0.32em] uppercase text-muted">Kelvi #{result.question.number}</p>
 
       {result.attempt.correct ? (
@@ -95,6 +94,6 @@ export default async function ResultPage({
           Back to Kelvi
         </Link>
       </div>
-    </AppShell>
+    </>
   );
 }

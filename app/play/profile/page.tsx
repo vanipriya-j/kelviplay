@@ -1,19 +1,18 @@
 import Link from "next/link";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getProfileState } from "@/lib/game/home";
+import { existingPlayerId } from "@/lib/play-session";
 import { formatResponseSeconds } from "@/lib/game/time";
-import { AppShell, BottomNav } from "@/components/layout/AppShell";
 import { ProfileForm } from "@/components/kelvi/ProfileForm";
 import { SignOutButton } from "@/components/kelvi/SignOutButton";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const playerId = await existingPlayerId();
+  if (!playerId) {
     return (
-      <AppShell footer={<BottomNav current="profile" />}>
+      <>
         <p className="text-[10px] tracking-[0.32em] uppercase text-muted">Aarla Play</p>
         <h1 className="font-serif mt-3 text-5xl leading-tight">Play first.</h1>
         <p className="mt-4 text-sm text-muted">
@@ -25,23 +24,23 @@ export default async function ProfilePage() {
         >
           Back to Kelvi
         </Link>
-      </AppShell>
+      </>
     );
   }
-  const state = await getProfileState(prisma, session.user.id);
+  const state = await getProfileState(prisma, playerId);
   if (!state) {
     return (
-      <AppShell footer={<BottomNav current="profile" />}>
+      <>
         <h1 className="font-serif mt-14 text-4xl">Seat not found.</h1>
         <Link href="/play/kelvi" className="mt-8 inline-block text-sm tracking-[0.18em] uppercase">
           Back to Kelvi
         </Link>
-      </AppShell>
+      </>
     );
   }
 
   return (
-    <AppShell footer={<BottomNav current="profile" />}>
+    <>
       <p className="text-[10px] tracking-[0.32em] uppercase text-muted">Aarla Play</p>
       <h1 className="font-serif mt-3 text-5xl uppercase tracking-wide">{state.player.displayName}</h1>
       {state.player.city ? <p className="mt-2 text-sm text-muted">{state.player.city}</p> : null}
@@ -89,7 +88,7 @@ export default async function ProfilePage() {
       <div className="mt-8 text-center">
         <SignOutButton />
       </div>
-    </AppShell>
+    </>
   );
 }
 

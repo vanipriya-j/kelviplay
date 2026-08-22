@@ -19,6 +19,13 @@ export function sessionCookieNames() {
   return [...new Set([sessionCookieName(), "__Secure-authjs.session-token", "authjs.session-token"])];
 }
 
+export async function clearSessionCookies() {
+  const store = await cookies();
+  for (const name of sessionCookieNames()) {
+    store.delete(name);
+  }
+}
+
 export async function createGuestPlayer() {
   return prisma.player.create({
     data: {

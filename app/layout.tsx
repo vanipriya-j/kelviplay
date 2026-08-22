@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Figtree, Newsreader } from "next/font/google";
-import { SessionProvider } from "@/components/providers/session-provider";
 import "./globals.css";
 
 const sans = Figtree({
@@ -36,9 +35,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${sans.variable} ${serif.variable} h-full`}>
-      <body className="min-h-full antialiased">
-        <SessionProvider>{children}</SessionProvider>
-      </body>
+      <body className="min-h-full antialiased">{children}</body>
     </html>
   );
 }

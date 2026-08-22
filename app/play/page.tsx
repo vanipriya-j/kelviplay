@@ -1,20 +1,20 @@
 import Link from "next/link";
-import { auth } from "@/lib/auth";
 import { AppShell } from "@/components/layout/AppShell";
 import { LiveDot } from "@/components/brand/Wordmark";
 import { prisma } from "@/lib/db";
-import { getLiveQuestion } from "@/lib/game/engine";
+import { getLiveHeadline } from "@/lib/game/engine";
+import { sessionFromCookie } from "@/lib/session-cookie";
 
 export const dynamic = "force-dynamic";
 
 export default async function PlayLandingPage() {
-  const session = await auth();
-  let live = null;
-  try {
-    live = await getLiveQuestion(prisma);
-  } catch (error) {
-    console.error("[kelvi] play landing live lookup failed", error);
-  }
+  const [live, session] = await Promise.all([
+    getLiveHeadline(prisma).catch((error) => {
+      console.error("[kelvi] play landing live lookup failed", error);
+      return null;
+    }),
+    sessionFromCookie(),
+  ]);
 
   return (
     <AppShell>
@@ -26,6 +26,7 @@ export default async function PlayLandingPage() {
 
       <Link
         href="/play/kelvi"
+        prefetch
         className="paper-grain mt-12 block rounded-[28px] border border-rule px-5 py-8"
       >
         <p className="flex items-center gap-2 text-[10px] tracking-[0.28em] uppercase text-terracotta">

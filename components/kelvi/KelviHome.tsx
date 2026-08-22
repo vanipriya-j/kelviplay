@@ -16,7 +16,7 @@ export function KelviHome({ initial }: { initial: HomeState }) {
       const response = await fetch("/api/kelvi/home", { cache: "no-store" });
       if (!response.ok) return;
       setState((await response.json()) as HomeState);
-    }, 4000);
+    }, 12000);
     return () => window.clearInterval(id);
   }, []);
 
