@@ -123,6 +123,49 @@ export function formatClock(date: Date, timeZone = TIMEZONE): string {
     .toUpperCase();
 }
 
+export function pad2(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+export function istDayKey(date = new Date(), timeZone = TIMEZONE): string {
+  const zoned = zonedParts(date, timeZone);
+  return `${zoned.year}-${pad2(zoned.month)}-${pad2(zoned.day)}`;
+}
+
+export function toIstDatetimeLocal(date: Date, timeZone = TIMEZONE): string {
+  const zoned = zonedParts(date, timeZone);
+  return `${zoned.year}-${pad2(zoned.month)}-${pad2(zoned.day)}T${pad2(zoned.hour)}:${pad2(zoned.minute)}`;
+}
+
+/** Parse `<input type="datetime-local">` as Asia/Kolkata, not the server's TZ. */
+export function parseIstDatetimeLocal(value: string, timeZone = TIMEZONE): Date {
+  const trimmed = value.trim();
+  if (/[zZ]|[+-]\d{2}:\d{2}$/.test(trimmed)) {
+    const parsed = new Date(trimmed);
+    if (Number.isNaN(parsed.getTime())) throw new Error("Invalid datetime");
+    return parsed;
+  }
+  const match = trimmed.match(
+    /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/,
+  );
+  if (!match) {
+    const parsed = new Date(trimmed);
+    if (Number.isNaN(parsed.getTime())) throw new Error("Invalid datetime");
+    return parsed;
+  }
+  return zonedDateTimeToUtc(
+    {
+      year: Number(match[1]),
+      month: Number(match[2]),
+      day: Number(match[3]),
+      hour: Number(match[4]),
+      minute: Number(match[5]),
+      second: Number(match[6] ?? 0),
+    },
+    timeZone,
+  );
+}
+
 export function formatResponseSeconds(ms: number): string {
   const seconds = ms / 1000;
   if (seconds < 10) return `${seconds.toFixed(2)}`;
@@ -143,7 +186,7 @@ export function isLiveAt(
   now = new Date(),
 ): boolean {
   if (question.status === "DRAFT" || question.status === "ARCHIVED") return false;
-  return now >= question.releaseAt && now <= question.expireAt;
+  return now >= question.releaseAt && now < question.expireAt;
 }
 
 export function computeQuestionStatus(
@@ -154,6 +197,6 @@ export function computeQuestionStatus(
     return question.status;
   }
   if (now < question.releaseAt) return "SCHEDULED";
-  if (now > question.expireAt) return "EXPIRED";
+  if (now >= question.expireAt) return "EXPIRED";
   return "LIVE";
 }

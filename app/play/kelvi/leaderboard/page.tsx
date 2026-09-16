@@ -16,6 +16,22 @@ export default async function LeaderboardPage() {
       <h1 className="font-serif mt-3 text-center text-4xl">Play. Stay sharp. Top the week.</h1>
       <p className="mt-3 text-center text-sm text-muted">₹1,000 Aarla voucher · Pick your Aarla.</p>
 
+      {state.winners ? (
+        <section className="mt-10 text-center">
+          <p className="text-[11px] tracking-[0.22em] uppercase text-muted">Tonight</p>
+          <h2 className="font-serif mt-2 text-3xl">Today’s winners</h2>
+          <p className="mt-2 text-sm text-muted">{state.winners.dayLabel}</p>
+          <div className="mx-auto mt-6 max-w-[240px] overflow-hidden rounded-[24px] border border-rule">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={state.winners.imageUrl}
+              alt={`Kelvi winners for ${state.winners.dayLabel}`}
+              className="w-full"
+            />
+          </div>
+        </section>
+      ) : null}
+
       {state.liveNumber ? (
         <div className="mt-10">
           <RankList

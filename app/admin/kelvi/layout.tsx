@@ -15,6 +15,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <nav className="mt-6 grid gap-2 text-sm">
             <Link href="/admin/kelvi">Dashboard</Link>
             <Link href="/admin/kelvi/questions">Questions</Link>
+            <Link href="/admin/kelvi/broadcast">Tonight</Link>
             <Link href="/admin/kelvi/players">Players</Link>
             <Link href="/admin/kelvi/rewards">Rewards</Link>
             <Link href="/play/kelvi" className="text-muted">

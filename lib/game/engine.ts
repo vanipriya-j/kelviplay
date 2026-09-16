@@ -64,7 +64,7 @@ export async function getLiveHeadline(db: PrismaClient, now = new Date()) {
       game: { slug: KELVI_SLUG },
       status: { notIn: ["DRAFT", "ARCHIVED"] },
       releaseAt: { lte: now },
-      expireAt: { gte: now },
+      expireAt: { gt: now },
     },
     orderBy: { releaseAt: "desc" },
     select: { id: true, number: true, expireAt: true },
@@ -77,7 +77,7 @@ export async function getLiveQuestion(db: PrismaClient, now = new Date()) {
       game: { slug: KELVI_SLUG },
       status: { notIn: ["DRAFT", "ARCHIVED"] },
       releaseAt: { lte: now },
-      expireAt: { gte: now },
+      expireAt: { gt: now },
     },
     orderBy: { releaseAt: "desc" },
     include: {
