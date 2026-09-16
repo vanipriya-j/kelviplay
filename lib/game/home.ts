@@ -4,7 +4,7 @@ import { getDailyWinners } from "./daily-winners";
 import { rankFasterFingers, rankWeekly } from "./leaderboard";
 import { cadenceCopy, formatIstDayLabel, nextDropWindow, winnersBoardDay } from "./rhythm";
 import { nextMilestone, PRESENCE_TTL_MS } from "./scoring";
-import { formatWindowLabel, getDayStart, getWeekStart } from "./time";
+import { formatWindowLabel, getDayStart, getWeekStart, istDayKey } from "./time";
 import { countPlaying, getKelviGame, getLiveHeadline, getNextQuestion } from "./engine";
 import { publicName } from "../utils";
 
@@ -17,13 +17,36 @@ type HomeWinners = {
   fastest: Awaited<ReturnType<typeof getDailyWinners>>["fastest"];
 };
 
+function rhythmNextState(now = new Date()) {
+  const window = nextDropWindow(now);
+  return {
+    number: null as number | null,
+    windowLabel: formatWindowLabel(window.releaseAt, window.expireAt),
+    releaseAt: window.releaseAt.toISOString(),
+  };
+}
+
+function winnersShell(now = new Date()): HomeWinners | null {
+  const boardDay = winnersBoardDay(now);
+  if (!boardDay) return null;
+  const dayKey = istDayKey(boardDay);
+  return {
+    dayKey,
+    dayLabel: formatIstDayLabel(boardDay),
+    imageUrl: dailyWinnersImagePath(dayKey),
+    played: 0,
+    podium: [],
+    fastest: null,
+  };
+}
+
 function emptyHome() {
   return {
     player: null,
     live: null,
-    next: null,
+    next: rhythmNextState(),
     cadence: cadenceCopy(),
-    winners: null as HomeWinners | null,
+    winners: winnersShell(),
     stats: {
       currentStreak: 0,
       bestStreak: 0,

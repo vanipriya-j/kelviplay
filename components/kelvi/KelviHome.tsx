@@ -152,6 +152,9 @@ function WinnersLive({
           src={winners.imageUrl}
           alt={`Kelvi winners for ${winners.dayLabel}`}
           className="w-full"
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+          }}
         />
       </div>
       {winners.podium.length ? (
