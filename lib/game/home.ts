@@ -1,15 +1,52 @@
 import type { PrismaClient } from "@prisma/client";
+import { dailyWinnersImagePath } from "./broadcast";
+import { getDailyWinners } from "./daily-winners";
 import { rankFasterFingers, rankWeekly } from "./leaderboard";
+import { cadenceCopy, formatIstDayLabel, nextDropWindow, winnersBoardDay } from "./rhythm";
 import { nextMilestone, PRESENCE_TTL_MS } from "./scoring";
-import { formatWindowLabel, getDayStart, getWeekStart } from "./time";
+import { formatWindowLabel, getDayStart, getWeekStart, istDayKey } from "./time";
 import { countPlaying, getKelviGame, getLiveHeadline, getNextQuestion } from "./engine";
 import { publicName } from "../utils";
+
+type HomeWinners = {
+  dayKey: string;
+  dayLabel: string;
+  imageUrl: string;
+  played: number;
+  podium: Awaited<ReturnType<typeof getDailyWinners>>["podium"];
+  fastest: Awaited<ReturnType<typeof getDailyWinners>>["fastest"];
+};
+
+function rhythmNextState(now = new Date()) {
+  const window = nextDropWindow(now);
+  return {
+    number: null as number | null,
+    windowLabel: formatWindowLabel(window.releaseAt, window.expireAt),
+    releaseAt: window.releaseAt.toISOString(),
+  };
+}
+
+function winnersShell(now = new Date()): HomeWinners | null {
+  const boardDay = winnersBoardDay(now);
+  if (!boardDay) return null;
+  const dayKey = istDayKey(boardDay);
+  return {
+    dayKey,
+    dayLabel: formatIstDayLabel(boardDay),
+    imageUrl: dailyWinnersImagePath(dayKey),
+    played: 0,
+    podium: [],
+    fastest: null,
+  };
+}
 
 function emptyHome() {
   return {
     player: null,
     live: null,
-    next: null,
+    next: rhythmNextState(),
+    cadence: cadenceCopy(),
+    winners: winnersShell(),
     stats: {
       currentStreak: 0,
       bestStreak: 0,
@@ -50,7 +87,9 @@ export async function getHomeState(db: PrismaClient, playerId?: string | null) {
 
     const weekStart = getWeekStart(now);
     const dayStart = getDayStart(now);
-    const [stats, weeklyRows, todayCompleted, todayScheduled, recentAchievements, attempt, playingCount] =
+    const boardDay = winnersBoardDay(now);
+    const rhythmNext = nextDropWindow(now);
+    const [stats, weeklyRows, todayCompleted, todayScheduled, recentAchievements, attempt, playingCount, dailyWinners] =
       await Promise.all([
         playerId
           ? db.playerGameStats.findUnique({
@@ -91,6 +130,7 @@ export async function getHomeState(db: PrismaClient, playerId?: string | null) {
             })
           : null,
         live ? countPlaying(db, live.id, now) : 0,
+        boardDay ? getDailyWinners(db, boardDay, playerId).catch(() => null) : null,
       ]);
 
     const weekly = rankWeekly(
@@ -126,13 +166,28 @@ export async function getHomeState(db: PrismaClient, playerId?: string | null) {
           attemptId: attempt?.submittedAt ? attempt.id : undefined,
         }
       : null,
+    cadence: cadenceCopy(),
+    winners: dailyWinners && boardDay
+      ? {
+          dayKey: dailyWinners.dayKey,
+          dayLabel: formatIstDayLabel(boardDay),
+          imageUrl: dailyWinnersImagePath(dailyWinners.dayKey),
+          played: dailyWinners.played,
+          podium: dailyWinners.podium,
+          fastest: dailyWinners.fastest,
+        }
+      : null,
     next: next
       ? {
           number: next.number,
           windowLabel: formatWindowLabel(next.releaseAt, next.expireAt),
           releaseAt: next.releaseAt.toISOString(),
         }
-      : null,
+      : {
+          number: null,
+          windowLabel: formatWindowLabel(rhythmNext.releaseAt, rhythmNext.expireAt),
+          releaseAt: rhythmNext.releaseAt.toISOString(),
+        },
     stats: {
       currentStreak: stats?.currentStreak ?? 0,
       bestStreak: stats?.bestStreak ?? 0,
@@ -218,8 +273,22 @@ export async function getLeaderboardState(db: PrismaClient, playerId?: string | 
 
   const youWeekly = weekly.find((row) => row.isYou) ?? null;
 
+  const boardDay = winnersBoardDay(now);
+  const dailyWinners = boardDay
+    ? await getDailyWinners(db, boardDay, playerId).catch(() => null)
+    : null;
+
   return {
     liveNumber,
+    winners: dailyWinners && boardDay
+      ? {
+          dayKey: dailyWinners.dayKey,
+          dayLabel: formatIstDayLabel(boardDay),
+          imageUrl: dailyWinnersImagePath(dailyWinners.dayKey),
+          podium: dailyWinners.podium,
+          fastest: dailyWinners.fastest,
+        }
+      : winnersShell(now),
     fasterFingers,
     weekly: weekly.slice(0, 25),
     weeklyTotal: weekly.length,
@@ -237,6 +306,7 @@ export async function getLeaderboardState(db: PrismaClient, playerId?: string | 
     console.error("[kelvi] leaderboard failed", error);
     return {
       liveNumber: null,
+      winners: winnersShell(),
       fasterFingers: [],
       weekly: [],
       weeklyTotal: 0,

@@ -1,4 +1,5 @@
 import { getAdminDashboard } from "@/lib/game/admin";
+import { cadenceCopy } from "@/lib/game/rhythm";
 import { formatResponseSeconds } from "@/lib/game/time";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +10,7 @@ export default async function AdminDashboardPage() {
   return (
     <div>
       <h1 className="font-serif text-4xl">Today’s room</h1>
+      <p className="mt-2 text-sm text-muted">{cadenceCopy()}</p>
       {data.live ? (
         <p className="mt-2 text-muted">
           Kelvi #{data.live.number} · {data.live.status}

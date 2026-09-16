@@ -21,6 +21,7 @@ export function KelviHome({ initial }: { initial: HomeState }) {
   }, []);
 
   const live = state.live;
+  const winners = state.winners;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -48,16 +49,19 @@ export function KelviHome({ initial }: { initial: HomeState }) {
             <PlayNowButton alreadyPlayed={live.alreadyPlayed} attemptId={live.attemptId} />
           </div>
         </section>
+      ) : winners ? (
+        <WinnersLive winners={winners} next={state.next} />
       ) : (
         <section className="mt-14 text-center">
           <p className="text-[11px] tracking-[0.28em] uppercase text-muted">Next Kelvi</p>
-          <h1 className="font-serif mt-4 text-4xl leading-tight">The next Kelvi could drop anytime.</h1>
+          <h1 className="font-serif mt-4 text-4xl leading-tight">A question drops every 2 hours.</h1>
+          <p className="mt-5 text-sm tracking-wide text-muted">{state.cadence}</p>
           {state.next ? (
-            <p className="mt-5 text-sm tracking-wide text-muted">
+            <p className="mt-3 text-sm tracking-wide text-muted">
               Next Kelvi {state.next.windowLabel.toLowerCase()}
             </p>
           ) : (
-            <p className="mt-5 text-sm text-muted">A new drop is being set.</p>
+            <p className="mt-3 text-sm text-muted">A new drop is being set.</p>
           )}
         </section>
       )}
@@ -122,6 +126,62 @@ export function KelviHome({ initial }: { initial: HomeState }) {
         </>
       ) : null}
     </div>
+  );
+}
+
+function WinnersLive({
+  winners,
+  next,
+}: {
+  winners: NonNullable<HomeState["winners"]>;
+  next: HomeState["next"];
+}) {
+  return (
+    <section className="mt-14 text-center">
+      <p className="inline-flex items-center gap-2 text-[11px] tracking-[0.28em] uppercase text-terracotta">
+        <LiveDot />
+        Tonight
+      </p>
+      <h1 className="font-serif mt-4 text-4xl leading-tight tracking-wide">
+        TODAY’S WINNERS
+      </h1>
+      <p className="mt-4 text-sm tracking-wide text-muted">{winners.dayLabel}</p>
+      <div className="mx-auto mt-8 max-w-[280px] overflow-hidden rounded-[28px] border border-rule bg-cloud">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={winners.imageUrl}
+          alt={`Kelvi winners for ${winners.dayLabel}`}
+          className="w-full"
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+          }}
+        />
+      </div>
+      {winners.podium.length ? (
+        <ol className="mt-8 space-y-2 text-left">
+          {winners.podium.map((row) => (
+            <li key={row.playerId} className="flex justify-between border-b border-rule py-2 text-sm">
+              <span>
+                {row.rank}. {row.isYou ? "You" : row.displayName}
+              </span>
+              <span className="tabular-nums">{row.points.toLocaleString("en-IN")}</span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="mt-8 text-sm text-muted">No winners tonight. Come play tomorrow.</p>
+      )}
+      {winners.fastest ? (
+        <p className="mt-4 text-sm text-muted">
+          Fastest fingers · {winners.fastest.displayName} · {winners.fastest.seconds}s
+        </p>
+      ) : null}
+      {next ? (
+        <p className="mt-6 text-sm tracking-wide text-muted">
+          Next Kelvi {next.windowLabel.toLowerCase()}
+        </p>
+      ) : null}
+    </section>
   );
 }
 

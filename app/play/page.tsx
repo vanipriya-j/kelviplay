@@ -3,6 +3,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { LiveDot } from "@/components/brand/Wordmark";
 import { prisma } from "@/lib/db";
 import { getLiveHeadline } from "@/lib/game/engine";
+import { cadenceCopy, isWinnersLive } from "@/lib/game/rhythm";
 import { sessionFromCookie } from "@/lib/session-cookie";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,7 @@ export default async function PlayLandingPage() {
     }),
     sessionFromCookie(),
   ]);
+  const winnersLive = isWinnersLive();
 
   return (
     <AppShell>
@@ -34,12 +36,20 @@ export default async function PlayLandingPage() {
             <>
               <LiveDot /> Kelvi is live
             </>
+          ) : winnersLive ? (
+            <>
+              <LiveDot /> Tonight’s winners
+            </>
           ) : (
             "Now playing"
           )}
         </p>
         <p className="font-serif mt-3 text-4xl tracking-[0.12em]">KELVI</p>
-        <p className="mt-3 text-sm text-muted">A question drops. Answer fast. Protect the streak.</p>
+        <p className="mt-3 text-sm text-muted">
+          {winnersLive && !live
+            ? "Today’s winners are up. A new question drops at 6 AM."
+            : cadenceCopy()}
+        </p>
         <p className="mt-6 text-[11px] tracking-[0.22em] uppercase">Enter →</p>
       </Link>
 

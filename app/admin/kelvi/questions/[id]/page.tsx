@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { QuestionForm } from "@/components/admin/QuestionForm";
 import { asStringArray } from "@/lib/game/answers";
+import { toIstDatetimeLocal } from "@/lib/game/time";
 
 export default async function EditQuestionPage({
   params,
@@ -50,5 +51,5 @@ export default async function EditQuestionPage({
 }
 
 function toInput(date: Date) {
-  return date.toISOString().slice(0, 16);
+  return toIstDatetimeLocal(date);
 }

@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/kelvi",
+      "schedule": "30 16 * * *"
+    }
+  ]
+}

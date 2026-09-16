@@ -134,9 +134,12 @@ export function QuestionForm({
         />
       </label>
       <div className="grid gap-4 md:grid-cols-2">
-        <Field name="releaseAt" label="Release" type="datetime-local" defaultValue={defaultRelease} />
-        <Field name="expireAt" label="Expiry" type="datetime-local" defaultValue={defaultExpire} />
+        <Field name="releaseAt" label="Release (IST)" type="datetime-local" defaultValue={defaultRelease} />
+        <Field name="expireAt" label="Expiry (IST, 2 hours)" type="datetime-local" defaultValue={defaultExpire} />
       </div>
+      <p className="text-xs text-muted">
+        Times are Asia/Kolkata. Release snaps to 6am, 8am, 10am, 12pm, 2pm, 4pm, 6pm, or 8pm. Expiry is always 2 hours later.
+      </p>
       <Select
         name="streakRule"
         label="Streak rule"

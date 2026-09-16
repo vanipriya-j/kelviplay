@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { DEFAULT_SCORING, KELVI_SLUG } from "@/lib/game/scoring";
-import { getWeekStart } from "@/lib/game/time";
+import { getWeekStart, parseIstDatetimeLocal } from "@/lib/game/time";
+import { alignToDropGrid } from "@/lib/game/rhythm";
 import { randomVoucherCode } from "@/lib/utils";
 import { z } from "zod";
 
@@ -63,6 +64,16 @@ export async function saveQuestionAction(input: unknown) {
     }
   }
 
+  let releaseAt: Date;
+  let expireAt: Date;
+  try {
+    const aligned = alignToDropGrid(parseIstDatetimeLocal(data.releaseAt));
+    releaseAt = aligned.releaseAt;
+    expireAt = aligned.expireAt;
+  } catch {
+    return { ok: false as const, error: "Release time must be a valid IST datetime." };
+  }
+
   const payload = {
     gameId: game.id,
     number: data.number,
@@ -73,8 +84,8 @@ export async function saveQuestionAction(input: unknown) {
     difficulty: data.difficulty,
     correctAnswer: data.correctAnswer,
     acceptableAnswers,
-    releaseAt: new Date(data.releaseAt),
-    expireAt: new Date(data.expireAt),
+    releaseAt,
+    expireAt,
     status: data.status,
     competitive: data.competitive ?? true,
     streakRule: data.streakRule ?? "consecutive_correct",
@@ -222,4 +233,27 @@ export async function markRewardRedeemedAction(id: string, redeemed: boolean) {
   });
   revalidatePath("/admin/kelvi/rewards");
   return { ok: true as const };
+}
+
+export async function publishWinnersAction(input?: { dayKey?: string; force?: boolean }) {
+  await requireAdmin();
+  const { announceDailyWinners } = await import("@/lib/game/broadcast");
+  const result = await announceDailyWinners(prisma, {
+    dayKey: input?.dayKey,
+    force: input?.force ?? true,
+  });
+  revalidatePath("/admin/kelvi/broadcast");
+  revalidatePath("/play/kelvi");
+  if (!result.ok) return { ok: false as const, error: result.error };
+  return {
+    ok: true as const,
+    dayKey: result.dayKey,
+    skipped: result.skipped,
+    accounts: result.record.accounts.map((row) => ({
+      handle: row.handle,
+      ok: row.ok,
+      skipped: row.skipped,
+      error: row.error,
+    })),
+  };
 }
