@@ -288,7 +288,7 @@ export async function getLeaderboardState(db: PrismaClient, playerId?: string | 
           podium: dailyWinners.podium,
           fastest: dailyWinners.fastest,
         }
-      : null,
+      : winnersShell(now),
     fasterFingers,
     weekly: weekly.slice(0, 25),
     weeklyTotal: weekly.length,
@@ -306,7 +306,7 @@ export async function getLeaderboardState(db: PrismaClient, playerId?: string | 
     console.error("[kelvi] leaderboard failed", error);
     return {
       liveNumber: null,
-      winners: null,
+      winners: winnersShell(),
       fasterFingers: [],
       weekly: [],
       weeklyTotal: 0,
