@@ -44,6 +44,8 @@ export default async function EditQuestionPage({
           competitive: question.competitive,
           streakRule: question.streakRule,
           scoringConfig: JSON.stringify(question.scoringConfig ?? {}, null, 2),
+          mediaUrl: question.mediaUrl ?? "",
+          mediaKind: question.mediaKind ?? "",
         }}
       />
     </div>
