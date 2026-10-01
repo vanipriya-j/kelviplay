@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 import { ImageResponse } from "next/og";
 import { buildCatalogPoster, type CatalogPoster } from "./poster";
 import type { CatalogRow } from "./rows";

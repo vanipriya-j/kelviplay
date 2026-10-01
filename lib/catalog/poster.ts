@@ -44,6 +44,13 @@ export function assertCatalogPoster(poster: CatalogPoster) {
       throw new Error(`Catalog poster leaked ${key}`);
     }
   }
-  const { prompt: _prompt, ...meta } = poster;
+  const meta = {
+    variant: poster.variant,
+    number: poster.number,
+    title: poster.title,
+    category: poster.category,
+    brand: poster.brand,
+    handle: poster.handle,
+  };
   assertNoSpoilers(meta);
 }
