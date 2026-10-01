@@ -11,6 +11,8 @@ type QuestionPayload = {
   number: number;
   questionText: string;
   questionType: string;
+  mediaUrl?: string | null;
+  mediaKind?: string | null;
   options: { id: string; text: string; sortOrder: number }[];
 };
 
@@ -63,6 +65,17 @@ export function LiveQuestion({
       </header>
 
       <h1 className="font-serif mt-10 text-[1.85rem] leading-snug text-ink">{question.questionText}</h1>
+      {question.mediaUrl && (question.questionType === "IMAGE" || question.mediaKind === "image") ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={question.mediaUrl}
+          alt=""
+          className="mt-8 w-full rounded-2xl border border-rule"
+        />
+      ) : null}
+      {question.mediaUrl && (question.questionType === "AUDIO" || question.mediaKind === "audio") ? (
+        <audio src={question.mediaUrl} controls className="mt-8 w-full" />
+      ) : null}
 
       <div className="mt-10 flex flex-1 flex-col gap-3">
         {question.questionType === "MULTIPLE_CHOICE" ? (
