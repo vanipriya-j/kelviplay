@@ -23,6 +23,8 @@ type QuestionValues = {
   competitive: boolean;
   streakRule: string;
   scoringConfig: string;
+  mediaUrl?: string;
+  mediaKind?: string;
 };
 
 export function QuestionForm({
@@ -69,6 +71,8 @@ export function QuestionForm({
             competitive: form.get("competitive") === "on",
             streakRule: form.get("streakRule"),
             scoringConfig: form.get("scoringConfig"),
+            mediaUrl: form.get("mediaUrl"),
+            mediaKind: form.get("mediaKind"),
           });
           if (!result.ok) {
             setError(result.error ?? "Could not save.");
@@ -116,6 +120,22 @@ export function QuestionForm({
           options={["DRAFT", "SCHEDULED", "ARCHIVED"]}
         />
       </div>
+      <Field
+        name="mediaUrl"
+        label="Image / audio URL"
+        defaultValue={question?.mediaUrl ?? ""}
+        required={false}
+      />
+      <Select
+        name="mediaKind"
+        label="Media kind"
+        defaultValue={question?.mediaKind ?? ""}
+        options={[
+          { value: "", label: "None" },
+          { value: "image", label: "Image" },
+          { value: "audio", label: "Audio" },
+        ]}
+      />
       <Field name="correctAnswer" label="Correct answer" defaultValue={question?.correctAnswer} />
       <label className="text-xs tracking-[0.14em] uppercase text-muted">
         Acceptable text variants (one per line)
@@ -195,11 +215,13 @@ function Field({
   label,
   defaultValue,
   type = "text",
+  required = name !== "scoringConfig",
 }: {
   name: string;
   label: string;
   defaultValue?: string;
   type?: string;
+  required?: boolean;
 }) {
   return (
     <label className="text-xs tracking-[0.14em] uppercase text-muted">
@@ -208,7 +230,7 @@ function Field({
         name={name}
         type={type}
         defaultValue={defaultValue}
-        required={name !== "scoringConfig"}
+        required={required}
         className="mt-2 w-full border-b border-rule bg-transparent py-2 text-base text-ink outline-none"
       />
     </label>

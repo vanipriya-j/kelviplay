@@ -34,6 +34,8 @@ const questionSchema = z.object({
   competitive: z.coerce.boolean().optional(),
   streakRule: z.enum(["consecutive_correct", "participation"]).optional(),
   scoringConfig: z.string().optional(),
+  mediaUrl: z.string().trim().optional(),
+  mediaKind: z.enum(["", "image", "audio", "video"]).optional(),
 });
 
 function parseList(value?: string) {
@@ -74,6 +76,13 @@ export async function saveQuestionAction(input: unknown) {
     return { ok: false as const, error: "Release time must be a valid IST datetime." };
   }
 
+  let mediaUrl: string | null;
+  try {
+    mediaUrl = parseMediaUrl(data.mediaUrl);
+  } catch {
+    return { ok: false as const, error: "Media URL must start with http." };
+  }
+
   const payload = {
     gameId: game.id,
     number: data.number,
@@ -90,6 +99,8 @@ export async function saveQuestionAction(input: unknown) {
     competitive: data.competitive ?? true,
     streakRule: data.streakRule ?? "consecutive_correct",
     scoringConfig,
+    mediaUrl,
+    mediaKind: parseMediaKind(data.questionType, data.mediaKind, data.mediaUrl),
   };
 
   const question = data.id
@@ -113,6 +124,7 @@ export async function saveQuestionAction(input: unknown) {
   }
 
   revalidatePath("/admin/kelvi/questions");
+  revalidatePath("/admin/kelvi/catalog");
   revalidatePath("/play/kelvi");
   return { ok: true as const, id: question.id };
 }
@@ -130,6 +142,7 @@ export async function deleteQuestionAction(id: string) {
     await prisma.question.delete({ where: { id } });
   }
   revalidatePath("/admin/kelvi/questions");
+  revalidatePath("/admin/kelvi/catalog");
   return { ok: true as const };
 }
 
@@ -233,6 +246,50 @@ export async function markRewardRedeemedAction(id: string, redeemed: boolean) {
   });
   revalidatePath("/admin/kelvi/rewards");
   return { ok: true as const };
+}
+
+function parseMediaUrl(value?: string) {
+  const url = (value ?? "").trim();
+  if (!url) return null;
+  if (!/^https?:\/\//i.test(url)) {
+    throw new Error("MEDIA_URL");
+  }
+  return url;
+}
+
+function parseMediaKind(questionType: string, kind?: string, mediaUrl?: string) {
+  if (kind) return kind;
+  if (!mediaUrl?.trim()) return null;
+  if (questionType === "IMAGE") return "image";
+  if (questionType === "AUDIO") return "audio";
+  return "image";
+}
+
+export async function syncCatalogAction(input?: { afterNumber?: number }) {
+  await requireAdmin();
+  const { isDriveConfigured } = await import("@/lib/catalog/google-auth");
+  if (!isDriveConfigured()) {
+    return {
+      ok: false as const,
+      error:
+        "Set GOOGLE_DRIVE_FOLDER_ID and GOOGLE_SERVICE_ACCOUNT_JSON, then share the folder with the service account as Editor.",
+    };
+  }
+  try {
+    const { renderCatalogPosterPng } = await import("@/lib/catalog/render-poster");
+    const { syncCatalogToDrive } = await import("@/lib/catalog/sync");
+    const result = await syncCatalogToDrive(prisma, {
+      afterNumber: input?.afterNumber,
+      renderPoster: renderCatalogPosterPng,
+    });
+    revalidatePath("/admin/kelvi/catalog");
+    return { ok: true as const, ...result };
+  } catch (error) {
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error.message : "Could not sync to Drive.",
+    };
+  }
 }
 
 export async function publishWinnersAction(input?: { dayKey?: string; force?: boolean }) {
