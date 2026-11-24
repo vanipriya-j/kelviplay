@@ -14,28 +14,34 @@ export default async function QuestionsPage() {
 
   return (
     <div>
-      <div className="flex items-end justify-between">
+      <div className="flex items-end justify-between gap-4">
         <h1 className="font-serif text-4xl">Questions</h1>
-        <Link href="/admin/kelvi/questions/new" className="text-sm tracking-[0.14em] uppercase">
-          New Kelvi
-        </Link>
+        <div className="flex gap-4 text-sm tracking-[0.14em] uppercase">
+          <Link href="/play/kelvi/practice">Practice</Link>
+          <Link href="/admin/kelvi/questions/new">New Kelvi</Link>
+        </div>
       </div>
       <ul className="mt-8 divide-y divide-rule">
         {questions.map((question) => (
           <li key={question.id} className="py-4">
-            <Link href={`/admin/kelvi/questions/${question.id}`} className="flex justify-between gap-4">
-              <div>
+            <div className="flex justify-between gap-4">
+              <Link href={`/admin/kelvi/questions/${question.id}`} className="min-w-0 flex-1">
                 <p className="font-serif text-xl">
                   #{question.number} {question.internalTitle}
                 </p>
                 <p className="mt-1 line-clamp-1 text-sm text-muted">{question.questionText}</p>
-              </div>
+              </Link>
               <div className="text-right text-xs uppercase tracking-wide text-muted">
                 <p>{computeQuestionStatus(question)}</p>
                 <p className="mt-1">{question.category.name}</p>
                 <p className="mt-1">{question._count.attempts} plays</p>
+                <p className="mt-2">
+                  <Link href={`/play/kelvi/practice/${question.id}`} className="text-ink">
+                    Try untimed
+                  </Link>
+                </p>
               </div>
-            </Link>
+            </div>
           </li>
         ))}
       </ul>
