@@ -6,6 +6,7 @@ import {
   isPracticeVisible,
   listPracticeQuestions,
   nextPracticeQuestionId,
+  nextPracticeWhere,
 } from "@/lib/game/practice";
 
 const now = new Date("2026-11-24T06:00:00.000Z");
@@ -135,18 +136,22 @@ describe("practice grading", () => {
   it("returns null for questions outside this player's practice set", async () => {
     const db = {
       question: {
-        findMany: async () => [
-          {
-            id: "170",
-            number: 170,
-            internalTitle: "Kelvi",
-            questionType: "TEXT",
-            status: "SCHEDULED",
-            ...windowAround("future"),
-            category: { name: "Tamil" },
-          },
-        ],
-        findUnique: async () => null,
+        findUnique: async () => ({
+          id: "170",
+          number: 170,
+          internalTitle: "Kelvi",
+          questionText: "What is Kelvi?",
+          questionType: "TEXT",
+          mediaUrl: null,
+          mediaKind: null,
+          status: "SCHEDULED",
+          ...windowAround("future"),
+          correctAnswer: "A question",
+          acceptableAnswers: [],
+          category: { name: "Tamil" },
+          options: [],
+        }),
+        findFirst: async () => null,
       },
     } as unknown as PrismaClient;
 
@@ -156,5 +161,15 @@ describe("practice grading", () => {
       now,
     );
     expect(result).toBeNull();
+  });
+
+  it("asks the database only for the next visible Kelvi", () => {
+    const publicNext = nextPracticeWhere(170, { includeUpcoming: false }, now);
+    expect(publicNext).toMatchObject({
+      number: { gt: 170 },
+      releaseAt: { lte: now },
+    });
+    const adminNext = nextPracticeWhere(170, { includeUpcoming: true }, now);
+    expect(adminNext.releaseAt).toBeUndefined();
   });
 });

@@ -15,8 +15,9 @@ export default async function CatalogPage() {
     <div>
       <h1 className="font-serif text-4xl">Catalog</h1>
       <p className="mt-2 text-muted">
-        Every Kelvi in one Drive folder: a spreadsheet of the list, plus a poster image for each
-        number. Posters show the question. Answers stay in the sheet only.
+        Drive folder for the list and GPT stills. Play uses{" "}
+        <span className="text-ink">images/kelvi-NNNN-question.png</span> on the question and{" "}
+        <span className="text-ink">images/kelvi-NNNN-answer.png</span> after someone locks in.
       </p>
 
       <CatalogPanel

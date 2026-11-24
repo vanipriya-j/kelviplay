@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getPracticeQuestion } from "@/lib/game/practice";
 import { PracticeRound } from "@/components/kelvi/PracticeRound";
+import { sessionFromCookie } from "@/lib/session-cookie";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ export default async function PracticeQuestionPage({
   params: Promise<{ questionId: string }>;
 }) {
   const { questionId } = await params;
-  const session = await auth();
+  const session = await sessionFromCookie();
   let opened = null;
   try {
     opened = await getPracticeQuestion(prisma, questionId, {

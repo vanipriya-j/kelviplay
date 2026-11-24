@@ -116,9 +116,14 @@ body {
 }
 
 .option-btn {
-  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  touch-action: manipulation;
+  transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
 .option-btn:active {
   transform: scale(0.985);
+}
+
+.option-btn:disabled {
+  cursor: default;
 }

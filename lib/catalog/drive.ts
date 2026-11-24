@@ -139,6 +139,22 @@ async function uploadMedia(
   });
 }
 
+export async function driveMedia(client: DriveClient, fileId: string) {
+  const url = new URL(`${DRIVE_API}/files/${encodeURIComponent(fileId)}`);
+  url.searchParams.set("alt", "media");
+  url.searchParams.set("supportsAllDrives", "true");
+  const response = await client.fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${client.token}` },
+  });
+  if (!response.ok) {
+    throw new Error(`Google Drive HTTP ${response.status}`);
+  }
+  return {
+    bytes: new Uint8Array(await response.arrayBuffer()),
+    contentType: response.headers.get("content-type") || "image/png",
+  };
+}
+
 export async function driveJson<T>(client: DriveClient, url: string, init?: RequestInit): Promise<T> {
   const response = await client.fetch(url, {
     ...init,

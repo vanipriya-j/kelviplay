@@ -200,6 +200,7 @@ export async function openKelvi(
       number: live.number,
       questionText: live.questionText,
       questionType: live.questionType,
+      category: live.category.name,
       mediaUrl: live.mediaUrl,
       mediaKind: live.mediaKind,
       options: live.options.map((option) => ({

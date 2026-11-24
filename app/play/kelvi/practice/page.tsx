@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { listPracticeQuestions } from "@/lib/game/practice";
+import { sessionFromCookie } from "@/lib/session-cookie";
 
 export const dynamic = "force-dynamic";
 
 export default async function PracticeIndexPage() {
-  const session = await auth();
+  const session = await sessionFromCookie();
   let questions: Awaited<ReturnType<typeof listPracticeQuestions>> = [];
   try {
     questions = await listPracticeQuestions(prisma, {
@@ -20,10 +20,11 @@ export default async function PracticeIndexPage() {
   return (
     <div className="flex flex-1 flex-col">
       <p className="text-[10px] tracking-[0.32em] uppercase text-muted">Practice</p>
-      <h1 className="font-serif mt-4 text-4xl leading-tight">Same Kelvi. No clock.</h1>
+      <h1 className="font-serif mt-4 text-4xl leading-tight">See a still. Answer. Know.</h1>
       <p className="mt-4 text-sm text-muted">
-        Lock in an answer, see if you know it, then take the next one. Practice never scores, never
-        breaks a streak, and never enters the week.
+        Tap one choice, or type the word. You’ll see at once if you knew it. Posters come from the
+        Drive stills GPT is filling (<span className="text-ink">kelvi-0170-question.png</span>).
+        Practice never scores.
       </p>
 
       {first ? (

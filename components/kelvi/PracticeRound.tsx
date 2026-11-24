@@ -1,17 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { submitPracticeAction } from "@/lib/actions/practice";
 import { cn } from "@/lib/utils";
+import { QuestionStill } from "./QuestionStill";
 
 type QuestionPayload = {
   id: string;
   number: number;
   questionText: string;
   questionType: string;
+  category: string;
   mediaUrl?: string | null;
   mediaKind?: string | null;
+  questionStill: string;
+  answerStill: string;
   options: { id: string; text: string; sortOrder: number }[];
 };
 
@@ -33,12 +37,15 @@ export function PracticeRound({
   const [chosen, setChosen] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [grade, setGrade] = useState<Grade | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
+  const multiple = question.questionType === "MULTIPLE_CHOICE";
 
   function submit(answer: string) {
     if (pending || grade) return;
     setChosen(answer);
-    startTransition(async () => {
+    setPending(true);
+    setError(null);
+    void (async () => {
       try {
         const result = await submitPracticeAction({
           questionId: question.id,
@@ -47,6 +54,7 @@ export function PracticeRound({
         if (!result.ok) {
           setError(result.message ?? "Could not lock that in.");
           setChosen(null);
+          setPending(false);
           return;
         }
         setGrade({
@@ -55,11 +63,13 @@ export function PracticeRound({
           nextId: result.nextId,
           correctOptionId: result.correctOptionId,
         });
+        setPending(false);
       } catch {
         setError("Could not lock that in. Try again.");
         setChosen(null);
+        setPending(false);
       }
-    });
+    })();
   }
 
   function reset() {
@@ -67,136 +77,171 @@ export function PracticeRound({
     setChosen(null);
     setError(null);
     setGrade(null);
+    setPending(false);
   }
+
+  const stillSrc = grade ? question.answerStill : question.questionStill;
+  const locked = pending || Boolean(grade);
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-start justify-between">
+      <header className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] tracking-[0.32em] uppercase text-muted">Kelvi #{question.number}</p>
           <p className="mt-2 text-[11px] tracking-[0.16em] uppercase text-terracotta">
-            Practice · no clock
+            {grade ? (grade.correct ? "You knew it" : "Not this one") : "Practice · no clock"}
           </p>
         </div>
         <p className="text-[11px] tracking-[0.16em] uppercase text-muted">Not scored</p>
       </header>
 
-      <h1 className="font-serif mt-10 text-[1.85rem] leading-snug text-ink">{question.questionText}</h1>
-      {question.mediaUrl && (question.questionType === "IMAGE" || question.mediaKind === "image") ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={question.mediaUrl}
-          alt=""
-          className="mt-8 w-full rounded-2xl border border-rule"
-        />
-      ) : null}
+      <QuestionStill
+        key={stillSrc}
+        number={question.number}
+        category={question.category}
+        src={question.mediaUrl && !grade ? question.mediaUrl : stillSrc}
+        side={grade ? "answer" : "question"}
+      />
+
+      <h1 className="font-serif mt-6 text-[1.7rem] leading-snug text-ink">{question.questionText}</h1>
+      {!grade ? (
+        <p className="mt-3 text-sm text-muted">
+          {multiple ? "Tap the one you know. You’ll see if it’s right." : "Type the word, then lock it in."}
+        </p>
+      ) : (
+        <p
+          className={cn(
+            "mt-4 font-serif text-3xl",
+            grade.correct ? "text-forest" : "text-terracotta",
+          )}
+        >
+          {grade.correct ? "Correct" : "Wrong"}
+        </p>
+      )}
+
       {question.mediaUrl && (question.questionType === "AUDIO" || question.mediaKind === "audio") ? (
-        <audio src={question.mediaUrl} controls className="mt-8 w-full" />
+        <audio src={question.mediaUrl} controls className="mt-6 w-full" />
       ) : null}
 
-      {grade ? (
-        <PracticeResult grade={grade} fallbackNextId={nextId} onAgain={reset} />
-      ) : (
-        <div className="mt-10 flex flex-1 flex-col gap-3">
-          {question.questionType === "MULTIPLE_CHOICE" ? (
-            question.options.map((option, index) => (
+      <div className="mt-6 flex flex-1 flex-col gap-3">
+        {multiple ? (
+          question.options.map((option, index) => {
+            const state = optionState(option.id, chosen, grade, pending);
+            return (
               <button
                 key={option.id}
                 type="button"
-                disabled={pending || Boolean(chosen)}
+                disabled={locked}
+                onPointerDown={(event) => {
+                  if (event.button !== 0) return;
+                  submit(option.id);
+                }}
                 onClick={() => submit(option.id)}
                 className={cn(
-                  "option-btn rounded-2xl border border-rule bg-cloud px-4 py-4 text-left",
-                  chosen === option.id && "border-ink bg-paper",
+                  "option-btn min-h-14 rounded-2xl border px-4 py-4 text-left",
+                  state.className,
                 )}
               >
-                <span className="mr-3 font-serif text-sm text-muted">
+                <span className="mr-3 font-serif text-sm opacity-70">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <span className="text-[15px] leading-snug">{option.text}</span>
+                {state.label ? (
+                  <span className="mt-1 block text-[11px] tracking-[0.16em] uppercase">
+                    {state.label}
+                  </span>
+                ) : null}
               </button>
-            ))
-          ) : (
-            <form
-              className="mt-4"
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (text.trim()) submit(text.trim());
-              }}
-            >
-              <input
-                value={text}
-                onChange={(event) => setText(event.target.value)}
-                placeholder="Type your answer"
-                autoComplete="off"
-                autoFocus
-                disabled={pending}
-                className="w-full border-b border-ink bg-transparent py-3 font-serif text-2xl outline-none placeholder:text-rule"
-              />
+            );
+          })
+        ) : (
+          <form
+            className="mt-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (text.trim()) submit(text.trim());
+            }}
+          >
+            <input
+              value={grade ? grade.answer : text}
+              onChange={(event) => setText(event.target.value)}
+              placeholder="Type your answer"
+              autoComplete="off"
+              autoFocus
+              disabled={locked}
+              className="w-full border-b border-ink bg-transparent py-3 font-serif text-2xl outline-none placeholder:text-rule disabled:opacity-80"
+            />
+            {!grade ? (
               <button
                 type="submit"
                 disabled={pending || !text.trim()}
                 className="mt-8 w-full rounded-full bg-ink py-4 text-sm tracking-[0.28em] text-ivory uppercase disabled:opacity-50"
               >
-                {pending ? "LOCKING…" : "LOCK IN"}
+                {pending ? "GOT IT…" : "LOCK IN"}
               </button>
-            </form>
-          )}
+            ) : null}
+          </form>
+        )}
+      </div>
+
+      {pending && !grade ? (
+        <p className="mt-4 text-sm text-terracotta">Got it. Checking…</p>
+      ) : null}
+
+      {grade ? (
+        <div className="mt-6">
+          <p className="text-lg">
+            The answer is <span className="font-serif">{grade.answer}</span>
+          </p>
+          <p className="mt-2 text-sm text-muted">Practice does not count toward streak, rank, or the week.</p>
+          <div className="mt-8 space-y-3">
+            {(grade.nextId ?? nextId) ? (
+              <Link
+                href={`/play/kelvi/practice/${grade.nextId ?? nextId}`}
+                className="block w-full rounded-full bg-ink py-4 text-center text-sm tracking-[0.28em] text-ivory uppercase"
+              >
+                Next Kelvi
+              </Link>
+            ) : (
+              <p className="text-center text-sm text-muted">That was the last one in practice.</p>
+            )}
+            <button
+              type="button"
+              onClick={reset}
+              className="block w-full rounded-full border border-rule py-4 text-sm tracking-[0.28em] uppercase"
+            >
+              Try this again
+            </button>
+          </div>
         </div>
-      )}
+      ) : null}
       {error ? <p className="mt-4 text-sm text-terracotta">{error}</p> : null}
     </div>
   );
 }
 
-function PracticeResult({
-  grade,
-  fallbackNextId,
-  onAgain,
-}: {
-  grade: Grade;
-  fallbackNextId: string | null;
-  onAgain: () => void;
-}) {
-  const nextId = grade.nextId ?? fallbackNextId;
-
-  return (
-    <div className="mt-10">
-      {grade.correct ? (
-        <>
-          <p className="text-[11px] tracking-[0.32em] uppercase text-terracotta">Correct</p>
-          <h2 className="font-serif mt-3 text-4xl tracking-wide">You know it.</h2>
-        </>
-      ) : (
-        <>
-          <p className="text-[11px] tracking-[0.32em] uppercase text-muted">Not this one</p>
-          <h2 className="font-serif mt-3 text-4xl leading-tight">The answer is still yours.</h2>
-        </>
-      )}
-      <p className="mt-6 text-lg">
-        Answer · <span className="font-serif">{grade.answer}</span>
-      </p>
-      <p className="mt-3 text-sm text-muted">Practice does not count toward streak, rank, or the week.</p>
-
-      <div className="mt-10 space-y-3">
-        {nextId ? (
-          <Link
-            href={`/play/kelvi/practice/${nextId}`}
-            className="block w-full rounded-full bg-ink py-4 text-center text-sm tracking-[0.28em] text-ivory uppercase"
-          >
-            Next Kelvi
-          </Link>
-        ) : (
-          <p className="text-center text-sm text-muted">That was the last one in practice.</p>
-        )}
-        <button
-          type="button"
-          onClick={onAgain}
-          className="block w-full rounded-full border border-rule py-4 text-sm tracking-[0.28em] uppercase"
-        >
-          Try this again
-        </button>
-      </div>
-    </div>
-  );
+function optionState(
+  optionId: string,
+  chosen: string | null,
+  grade: Grade | null,
+  pending: boolean,
+) {
+  if (grade) {
+    const isCorrect = optionId === grade.correctOptionId;
+    const isChosen = optionId === chosen;
+    if (isCorrect) {
+      return { className: "border-forest bg-forest text-ivory", label: "Correct" };
+    }
+    if (isChosen) {
+      return { className: "border-terracotta bg-terracotta text-ivory", label: "Your tap" };
+    }
+    return { className: "border-rule bg-cloud text-muted", label: null };
+  }
+  if (chosen === optionId) {
+    return {
+      className: "border-ink bg-ink text-ivory",
+      label: pending ? "Got it…" : "Your tap",
+    };
+  }
+  return { className: "border-rule bg-cloud text-ink", label: null };
 }

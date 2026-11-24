@@ -1,4 +1,5 @@
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
+import { stillPath } from "../catalog/stills";
 import { asStringArray, gradeAnswer } from "./answers";
 import { KELVI_SLUG } from "./scoring";
 import { computeQuestionStatus } from "./time";
@@ -21,8 +22,11 @@ export type PracticeQuestion = {
   number: number;
   questionText: string;
   questionType: string;
+  category: string;
   mediaUrl: string | null;
   mediaKind: string | null;
+  questionStill: string;
+  answerStill: string;
   options: { id: string; text: string; sortOrder: number }[];
 };
 
@@ -126,36 +130,82 @@ export async function listPracticeQuestions(
     .sort((a, b) => a.number - b.number);
 }
 
+function toPracticeQuestion(row: {
+  id: string;
+  number: number;
+  questionText: string;
+  questionType: string;
+  mediaUrl: string | null;
+  mediaKind: string | null;
+  category: { name: string };
+  options: { id: string; text: string; sortOrder: number }[];
+}): PracticeQuestion {
+  return {
+    id: row.id,
+    number: row.number,
+    questionText: row.questionText,
+    questionType: row.questionType,
+    category: row.category.name,
+    mediaUrl: row.mediaUrl,
+    mediaKind: row.mediaKind,
+    questionStill: stillPath(row.number, "question"),
+    answerStill: stillPath(row.number, "answer"),
+    options: row.options.map((option) => ({
+      id: option.id,
+      text: option.text,
+      sortOrder: option.sortOrder,
+    })),
+  };
+}
+
+export function nextPracticeWhere(
+  afterNumber: number,
+  visibility: PracticeVisibility,
+  now = new Date(),
+): Prisma.QuestionWhereInput {
+  if (visibility.includeUpcoming) {
+    return {
+      game: { slug: KELVI_SLUG },
+      number: { gt: afterNumber },
+      status: { not: "ARCHIVED" },
+    };
+  }
+  return {
+    game: { slug: KELVI_SLUG },
+    number: { gt: afterNumber },
+    status: { notIn: ["DRAFT", "ARCHIVED"] },
+    releaseAt: { lte: now },
+  };
+}
+
+export async function nextPracticeQuestion(
+  db: PrismaClient,
+  afterNumber: number,
+  visibility: PracticeVisibility,
+  now = new Date(),
+) {
+  return db.question.findFirst({
+    where: nextPracticeWhere(afterNumber, visibility, now),
+    orderBy: { number: "asc" },
+    select: { id: true, number: true },
+  });
+}
+
 export async function getPracticeQuestion(
   db: PrismaClient,
   questionId: string,
   visibility: PracticeVisibility,
   now = new Date(),
 ): Promise<{ question: PracticeQuestion; nextId: string | null } | null> {
-  const listed = await listPracticeQuestions(db, visibility, now);
-  if (!listed.some((item) => item.id === questionId)) return null;
-
   const row = await db.question.findUnique({
     where: { id: questionId },
     select: PRACTICE_SELECT,
   });
-  if (!row) return null;
-
+  if (!row || !isPracticeVisible(row, visibility, now)) return null;
+  const next = await nextPracticeQuestion(db, row.number, visibility, now);
   return {
-    question: {
-      id: row.id,
-      number: row.number,
-      questionText: row.questionText,
-      questionType: row.questionType,
-      mediaUrl: row.mediaUrl,
-      mediaKind: row.mediaKind,
-      options: row.options.map((option) => ({
-        id: option.id,
-        text: option.text,
-        sortOrder: option.sortOrder,
-      })),
-    },
-    nextId: nextPracticeQuestionId(listed, questionId),
+    question: toPracticeQuestion(row),
+    nextId: next?.id ?? null,
   };
 }
 
@@ -164,14 +214,12 @@ export async function gradePracticeQuestion(
   input: { questionId: string; answer: string; visibility: PracticeVisibility },
   now = new Date(),
 ) {
-  const listed = await listPracticeQuestions(db, input.visibility, now);
-  if (!listed.some((item) => item.id === input.questionId)) return null;
-
   const row = await db.question.findUnique({
     where: { id: input.questionId },
     select: PRACTICE_SELECT,
   });
-  if (!row) return null;
+  if (!row || !isPracticeVisible(row, input.visibility, now)) return null;
+  const next = await nextPracticeQuestion(db, row.number, input.visibility, now);
 
   return {
     ...gradePractice({
@@ -182,6 +230,6 @@ export async function gradePracticeQuestion(
       options: row.options,
     }),
     number: row.number,
-    nextId: nextPracticeQuestionId(listed, input.questionId),
+    nextId: next?.id ?? null,
   };
 }

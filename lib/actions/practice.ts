@@ -1,9 +1,9 @@
 "use server";
 
 import { z } from "zod";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { gradePracticeQuestion } from "@/lib/game/practice";
+import { sessionFromCookie } from "@/lib/session-cookie";
 
 const submitSchema = z.object({
   questionId: z.string().min(1),
@@ -11,7 +11,7 @@ const submitSchema = z.object({
 });
 
 export async function practiceVisibility() {
-  const session = await auth();
+  const session = await sessionFromCookie();
   return { includeUpcoming: Boolean(session?.user?.isAdmin) };
 }
 
