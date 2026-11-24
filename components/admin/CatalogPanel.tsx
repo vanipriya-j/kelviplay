@@ -5,11 +5,9 @@ import { syncCatalogAction } from "@/lib/actions/admin";
 
 type SyncState = {
   rows: number;
-  uploaded: number;
-  errors: Array<{ number: number; error: string }>;
-  nextNumber: number | null;
   folderUrl: string;
   sheetUrl: string;
+  imagesFolderUrl: string;
 };
 
 export function CatalogPanel({
@@ -27,26 +25,22 @@ export function CatalogPanel({
   const [state, setState] = useState<SyncState | null>(null);
   const [pending, start] = useTransition();
 
-  function sync(afterNumber?: number) {
+  function sync() {
     start(async () => {
-      const response = await syncCatalogAction({ afterNumber });
+      const response = await syncCatalogAction();
       if (!response.ok) {
         setError(response.error ?? "Could not sync.");
         return;
       }
       setError(null);
-      setState((prev) => ({
+      setState({
         rows: response.rows,
-        uploaded: (remaining ? prev?.uploaded ?? 0 : 0) + response.uploaded.length,
-        errors: [...(remaining ? prev?.errors ?? [] : []), ...response.errors],
-        nextNumber: response.nextNumber,
         folderUrl: response.folderUrl,
         sheetUrl: response.sheetUrl,
-      }));
+        imagesFolderUrl: response.imagesFolderUrl,
+      });
     });
   }
-
-  const remaining = state?.nextNumber != null;
 
   return (
     <div className="mt-8">
@@ -54,10 +48,10 @@ export function CatalogPanel({
         <button
           type="button"
           disabled={pending || !configured}
-          onClick={() => sync(remaining ? state.nextNumber ?? undefined : undefined)}
+          onClick={() => sync()}
           className="rounded-full bg-ink px-5 py-3 text-xs tracking-[0.16em] text-ivory uppercase disabled:opacity-40"
         >
-          {pending ? "Syncing…" : remaining ? "Continue images" : "Sync to Drive"}
+          {pending ? "Syncing…" : "Sync listing"}
         </button>
         <a
           href="/api/catalog/csv"
@@ -70,6 +64,11 @@ export function CatalogPanel({
       {!configured ? (
         <ol className="mt-6 list-decimal space-y-2 pl-5 text-sm text-muted">
           <li>Create a Google Drive folder named Kelvi.</li>
+          <li>
+            Put movie-poster stills in <span className="text-ink">images/</span> as{" "}
+            <span className="text-ink">kelvi-NNNN-question.png</span> and{" "}
+            <span className="text-ink">kelvi-NNNN-answer.png</span>.
+          </li>
           <li>Create a Google Cloud service account and download its JSON key.</li>
           <li>Share the folder with that service account as Editor.</li>
           <li>
@@ -80,7 +79,8 @@ export function CatalogPanel({
       ) : (
         <p className="mt-4 text-sm text-muted">
           Shared with <span className="text-ink">{serviceEmail || "the service account"}</span>. Keep
-          this folder private — the sheet includes answers.
+          this folder private — the sheet includes answers. Sync updates the listing only; it does
+          not overwrite stills.
         </p>
       )}
 
@@ -96,27 +96,24 @@ export function CatalogPanel({
 
       {state ? (
         <p className="mt-4 text-sm text-muted">
-          Listing {state.rows} Kelvis. Uploaded {state.uploaded} images
-          {remaining ? " so far" : ""}.{" "}
+          Listed {state.rows} Kelvis.{" "}
           {state.sheetUrl ? (
             <a href={state.sheetUrl} target="_blank" rel="noreferrer" className="underline">
               Open sheet
             </a>
           ) : null}
+          {state.imagesFolderUrl ? (
+            <>
+              {" · "}
+              <a href={state.imagesFolderUrl} target="_blank" rel="noreferrer" className="underline">
+                Open stills
+              </a>
+            </>
+          ) : null}
         </p>
       ) : (
         <p className="mt-4 text-sm text-muted">{total} Kelvis ready to list.</p>
       )}
-
-      {state?.errors.length ? (
-        <ul className="mt-4 space-y-1 text-sm text-terracotta">
-          {state.errors.map((row) => (
-            <li key={row.number}>
-              #{row.number}: {row.error}
-            </li>
-          ))}
-        </ul>
-      ) : null}
     </div>
   );
 }

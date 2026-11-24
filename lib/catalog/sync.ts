@@ -10,9 +10,7 @@ import {
   type DriveClient,
 } from "./drive";
 import { driveFolderId, isDriveConfigured } from "./google-auth";
-import { catalogCsv, listCatalogRows, type CatalogRow } from "./rows";
-
-export const CATALOG_SYNC_BATCH = 8;
+import { catalogCsv, listCatalogRows } from "./rows";
 
 export type CatalogSyncResult = {
   rows: number;
@@ -24,14 +22,15 @@ export type CatalogSyncResult = {
   imagesFolderUrl: string;
 };
 
+/**
+ * Sync the listing only. Movie-poster stills live in images/ and must not be
+ * overwritten by generated type cards.
+ */
 export async function syncCatalogToDrive(
   db: PrismaClient,
   options: {
-    renderPoster: (row: CatalogRow) => Promise<Uint8Array>;
     drive?: DriveClient;
-    afterNumber?: number;
-    limit?: number;
-  },
+  } = {},
 ): Promise<CatalogSyncResult> {
   if (!isDriveConfigured()) {
     throw new Error(
@@ -52,38 +51,11 @@ export async function syncCatalogToDrive(
   });
   const images = await ensureFolder(client, folderId, IMAGES_FOLDER_NAME);
 
-  const after = options.afterNumber ?? 0;
-  const limit = options.limit ?? CATALOG_SYNC_BATCH;
-  const batch = rows.filter((row) => row.number > after).slice(0, limit);
-  const uploaded: CatalogSyncResult["uploaded"] = [];
-  const errors: CatalogSyncResult["errors"] = [];
-
-  for (const row of batch) {
-    try {
-      const png = await options.renderPoster(row);
-      const file = await upsertFile(client, {
-        parentId: images.id,
-        name: row.imageFile,
-        bytes: png,
-        contentType: "image/png",
-      });
-      uploaded.push({ number: row.number, fileId: file.id });
-    } catch (error) {
-      errors.push({
-        number: row.number,
-        error: error instanceof Error ? error.message : "Could not upload image.",
-      });
-    }
-  }
-
-  const last = batch.at(-1)?.number ?? after;
-  const remaining = rows.some((row) => row.number > last);
-
   return {
     rows: rows.length,
-    uploaded,
-    errors,
-    nextNumber: remaining ? last : null,
+    uploaded: [],
+    errors: [],
+    nextNumber: null,
     folderUrl: driveFolderUrl(folderId),
     sheetUrl: sheet.webViewLink ?? driveFolderUrl(folderId),
     imagesFolderUrl: images.webViewLink ?? driveFolderUrl(images.id),

@@ -15,8 +15,9 @@ export default async function CatalogPage() {
     <div>
       <h1 className="font-serif text-4xl">Catalog</h1>
       <p className="mt-2 text-muted">
-        Every Kelvi in one Drive folder: a spreadsheet of the list, plus a poster image for each
-        number. Posters show the question. Answers stay in the sheet only.
+        Every Kelvi in one Drive folder: a spreadsheet of the list, plus two movie-poster stills —
+        the character of the question, and the character of the answer. No question or answer text
+        printed on the art. Copy stays in the sheet and here as HTML.
       </p>
 
       <CatalogPanel
@@ -35,17 +36,12 @@ export default async function CatalogPage() {
               </p>
               <p className="mt-1 line-clamp-2 text-sm text-muted">{row.question}</p>
               <p className="mt-2 text-[10px] tracking-[0.16em] uppercase text-muted">
-                {row.category} · {row.status} · {row.imageFile}
+                {row.category} · {row.status}
+              </p>
+              <p className="mt-1 text-[10px] tracking-[0.14em] uppercase text-muted">
+                {row.questionImage} · {row.answerImage}
               </p>
             </div>
-            <a
-              href={`/api/catalog/card?number=${row.number}`}
-              target="_blank"
-              rel="noreferrer"
-              className="shrink-0 text-xs tracking-[0.14em] uppercase"
-            >
-              Preview
-            </a>
           </li>
         ))}
       </ul>
