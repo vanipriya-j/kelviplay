@@ -37,7 +37,7 @@ Or paste `supabase/kelvi-complete.sql` in the Supabase SQL Editor (first time on
 
 On Vercel, `AUTH_SECRET` is marked sensitive and cannot be revealed. Add a new env var **`SETUP_SECRET`** (Production and Preview), save the value yourself, redeploy, then open **`/setup`** and paste that value. That creates schema `kelvi` on the Aarla OS database already configured as `DATABASE_URL`.
 
-Open [http://localhost:3000](http://localhost:3000). It lands on `/play`.
+Open [http://localhost:3000](http://localhost:3000). It lands on Kelvi (`/play/kelvi`). The full Aarla Play catalogue is [play.aarla.in](https://play.aarla.in).
 
 ### Demo sign-in
 
@@ -52,7 +52,7 @@ Guests can play immediately. Account creation is required to keep streaks, enter
 
 | Path | Purpose |
 | --- | --- |
-| `/play` | Aarla Play landing |
+| `/` and `/play` | Redirect into Kelvi |
 | `/play/kelvi` | Kelvi home (live or waiting) |
 | `/play/kelvi/live` | Focused live question |
 | `/play/kelvi/result/[attemptId]` | Result, Faster Fingers, share |

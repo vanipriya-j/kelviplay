@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PlayNowButton } from "./PlayNowButton";
+import { RelatedGames } from "./RelatedGames";
 import { LiveDot, Wordmark } from "@/components/brand/Wordmark";
 import type { getHomeState } from "@/lib/game/home";
 
@@ -125,6 +126,8 @@ export function KelviHome({ initial }: { initial: HomeState }) {
           ) : null}
         </>
       ) : null}
+
+      <RelatedGames />
     </div>
   );
 }

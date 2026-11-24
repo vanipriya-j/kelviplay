@@ -1,20 +1,30 @@
 import Link from "next/link";
+import { aarlaPlayCatalogUrl } from "@/lib/related-games";
 import { cn } from "@/lib/utils";
 
 export function Wordmark({
   compact = false,
-  href = "/play",
+  href = "/play/kelvi",
 }: {
   compact?: boolean;
   href?: string;
 }) {
   return (
-    <Link href={href} className="block text-center">
-      <p className="text-[10px] tracking-[0.38em] uppercase text-muted">Aarla Play</p>
+    <div className="block text-center">
+      <a
+        href={aarlaPlayCatalogUrl()}
+        target="_blank"
+        rel="noreferrer"
+        className="text-[10px] tracking-[0.38em] uppercase text-muted"
+      >
+        Aarla Play
+      </a>
       {!compact ? (
-        <p className="font-serif text-3xl tracking-[0.18em] text-ink mt-1">KELVI</p>
+        <Link href={href} className="font-serif mt-1 block text-3xl tracking-[0.18em] text-ink">
+          KELVI
+        </Link>
       ) : null}
-    </Link>
+    </div>
   );
 }
 
