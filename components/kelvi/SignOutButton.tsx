@@ -10,7 +10,7 @@ export function SignOutButton() {
       type="button"
       onClick={async () => {
         await signOutAction();
-        router.replace("/play");
+        router.replace("/play/kelvi");
         router.refresh();
       }}
       className="text-xs tracking-[0.16em] uppercase text-muted"
