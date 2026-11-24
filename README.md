@@ -60,7 +60,7 @@ Guests can play immediately. Account creation is required to keep streaks, enter
 | `/play/profile` | Player profile |
 | `/admin/kelvi` | Live room dashboard |
 | `/admin/kelvi/questions` | Schedule Kelvis |
-| `/admin/kelvi/catalog` | Drive listing + poster images |
+| `/admin/kelvi/catalog` | Drive listing + question/answer stills |
 | `/admin/kelvi/rewards` | Weekly vouchers |
 | `/admin/kelvi/broadcast` | Tonight’s winners image + Instagram publish |
 
@@ -97,4 +97,4 @@ npm run build
 - Voucher redemption is manual in admin. No payments in this MVP.
 - Share cards never include the question or answer. Player share is native / save image only.
 - Tonight’s winners image is generated at `/api/share/daily?day=YYYY-MM-DD` after 10 PM IST. Vercel Cron posts it to Instagram when `CRON_SECRET` and `INSTAGRAM_PUBLISH_ACCOUNTS` are set (`handle|igUserId|token` for aarla.play, aarla.kanakangi, aarla.merch). The portal still shows the image if Instagram tokens are missing.
-- Google Drive catalog (optional): admin **Catalog** writes a `Kelvi catalog` sheet plus `images/kelvi-NNNN.png` posters into `GOOGLE_DRIVE_FOLDER_ID`. Share that folder with the service account as Editor. Set `GOOGLE_SERVICE_ACCOUNT_JSON` (or `EMAIL` + `PRIVATE_KEY`). The sheet includes answers — keep the folder private. Public share cards still never include the question or answer. Catalog posters (`/api/catalog/card`) are admin-only and show the question, never the answer.
+- Google Drive catalog (optional): admin **Catalog** writes a `Kelvi catalog` sheet into `GOOGLE_DRIVE_FOLDER_ID`. Stills live in `images/` as `kelvi-NNNN-question.png` and `kelvi-NNNN-answer.png` — movie-poster character of the question and of the answer, no copy printed on the art. Sync updates the listing only; it does not overwrite stills. Share the folder with the service account as Editor. Set `GOOGLE_SERVICE_ACCOUNT_JSON` (or `EMAIL` + `PRIVATE_KEY`). The sheet includes answers — keep the folder private. Public share cards still never include the question or answer.
