@@ -20,10 +20,9 @@ export default async function PracticeIndexPage() {
   return (
     <div className="flex flex-1 flex-col">
       <p className="text-[10px] tracking-[0.32em] uppercase text-muted">Practice</p>
-      <h1 className="font-serif mt-4 text-4xl leading-tight">See a still. Answer. Know.</h1>
+      <h1 className="font-serif mt-4 text-4xl leading-tight">Practice Kelvi</h1>
       <p className="mt-4 text-sm text-muted">
-        Tap one choice, or type the word. You’ll see at once if you knew it. The picture on each
-        question is that Kelvi’s GPT still. Practice never scores.
+        Choose an answer or type your own. You’ll get instant feedback, with no timer or points.
       </p>
 
       {first ? (
@@ -46,7 +45,7 @@ export default async function PracticeIndexPage() {
               <Link href={`/play/kelvi/practice/${question.id}`} className="flex justify-between gap-4 py-4">
                 <div>
                   <p className="font-serif text-xl">
-                    #{question.number} {question.title}
+                    Kelvi #{question.number}
                   </p>
                   <p className="mt-1 text-xs tracking-[0.14em] uppercase text-muted">
                     {question.category} · {question.type.replaceAll("_", " ")}

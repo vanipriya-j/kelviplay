@@ -18,7 +18,13 @@ export function legacyStillFile(number: number) {
 }
 
 export function stillPath(number: number, side: "question" | "answer") {
-  return `/api/kelvi/still?number=${number}&side=${side}`;
+  return bundledStillPath(number, side) ?? `/api/kelvi/still?number=${number}&side=${side}`;
+}
+
+export function bundledStillPath(number: number, side: "question" | "answer") {
+  // The repo ships both posters for every seed Kelvi in this range.
+  if (!Number.isInteger(number) || number < 170 || number > 194) return null;
+  return `/images/kelvi-${padKelviNumber(number)}-${side}.webp`;
 }
 
 export function stillCandidates(number: number, side: "question" | "answer") {

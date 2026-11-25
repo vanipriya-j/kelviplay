@@ -19,6 +19,8 @@ export function QuestionStill({
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
   const scene = stillSceneFor({ title, questionText, category });
   const photo = Boolean(src && loadedSrc === src);
+  const bundledPoster = src?.startsWith("/images/kelvi-");
+  const frame = bundledPoster ? "h-[clamp(14rem,36svh,22rem)]" : "h-56";
 
   return (
     <div className="relative mt-6 overflow-hidden rounded-[28px] border border-rule">
@@ -29,12 +31,12 @@ export function QuestionStill({
           alt=""
           onLoad={() => setLoadedSrc(src)}
           onError={() => setLoadedSrc(null)}
-          className={photo ? "h-56 w-full object-cover object-center" : "hidden"}
+          className={photo ? `${frame} w-full ${bundledPoster ? "bg-ink object-contain" : "object-cover object-center"}` : "hidden"}
         />
       ) : null}
       {photo ? null : (
         <div
-          className="relative h-56 w-full"
+          className={`relative ${frame} w-full`}
           style={{
             background: `radial-gradient(120% 80% at 18% 8%, rgba(243,237,226,0.16), transparent 42%), linear-gradient(165deg, ${scene.from}, ${scene.to})`,
           }}

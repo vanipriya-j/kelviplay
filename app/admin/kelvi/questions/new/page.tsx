@@ -3,6 +3,8 @@ import { QuestionForm } from "@/components/admin/QuestionForm";
 import { nextDropOnOrAfter } from "@/lib/game/rhythm";
 import { toIstDatetimeLocal } from "@/lib/game/time";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewQuestionPage() {
   const [categories, last] = await Promise.all([
     prisma.category.findMany({ orderBy: { name: "asc" } }),
