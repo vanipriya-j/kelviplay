@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { stillPath } from "@/lib/catalog/stills";
 import { getAttemptResult } from "@/lib/game/engine";
 import { existingPlayerId } from "@/lib/play-session";
 import { formatResponseSeconds } from "@/lib/game/time";
@@ -71,6 +72,14 @@ export default async function ResultPage({
         </div>
       )}
 
+      {result.answerVideoUrl ? (
+        <section className="mt-6">
+          <h2 className="font-serif text-3xl">Badhil</h2>
+          <video controls playsInline preload="metadata" src={result.answerVideoUrl}
+            poster={stillPath(result.question.number, "answer")} aria-label="Badhil video"
+            className="mt-3 max-h-[70svh] w-full rounded-2xl bg-black" />
+        </section>
+      ) : null}
       {result.categoryBadge ? (
         <Link href="/play/profile" className="mt-6 block rounded-2xl border border-rule bg-cloud px-5 py-4">
           <span className="font-semibold">{result.question.category} badge</span>

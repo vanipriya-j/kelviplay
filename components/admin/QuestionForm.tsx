@@ -25,6 +25,7 @@ type QuestionValues = {
   scoringConfig: string;
   mediaUrl?: string;
   mediaKind?: string;
+  answerVideoUrl?: string;
 };
 
 export function QuestionForm({
@@ -73,6 +74,7 @@ export function QuestionForm({
             scoringConfig: form.get("scoringConfig"),
             mediaUrl: form.get("mediaUrl"),
             mediaKind: form.get("mediaKind"),
+            answerVideoUrl: form.get("answerVideoUrl"),
           });
           if (!result.ok) {
             setError(result.error ?? "Could not save.");
@@ -122,7 +124,7 @@ export function QuestionForm({
       </div>
       <Field
         name="mediaUrl"
-        label="Image / audio URL"
+        label="Kelvi media URL"
         defaultValue={question?.mediaUrl ?? ""}
         required={false}
       />
@@ -134,8 +136,16 @@ export function QuestionForm({
           { value: "", label: "None" },
           { value: "image", label: "Image" },
           { value: "audio", label: "Audio" },
+          { value: "video", label: "Kelvi video" },
         ]}
       />
+      <Field
+        name="answerVideoUrl"
+        label="Badhil video URL"
+        defaultValue={question?.answerVideoUrl ?? ""}
+        required={false}
+      />
+      <p className="text-sm text-muted">Use direct HTTPS links to video files. A vertical 9:16 MP4 works best on phones.</p>
       <Field name="correctAnswer" label="Correct answer" defaultValue={question?.correctAnswer} />
       <label className="text-xs tracking-[0.14em] uppercase text-muted">
         Acceptable text variants (one per line)

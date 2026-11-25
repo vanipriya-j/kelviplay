@@ -251,3 +251,17 @@ body {
     animation-duration: .01ms !important; transition-duration: .01ms !important;
   }
 }
+
+.kelvi-poster-video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center; background: #181411;
+}
+.kelvi-poster.has-video .kelvi-poster-copy {
+  pointer-events: none;
+  padding-bottom: 66px;
+}
+.kelvi-video-error {
+  position: absolute; top: 1rem; left: 1rem; z-index: 1;
+  border-radius: .5rem; padding: .4rem .65rem; background: #181411; color: #fff1dd;
+  font-size: .8rem;
+}

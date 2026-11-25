@@ -9,18 +9,24 @@ export function QuestionStill({
   title,
   questionText,
   src,
+  videoSrc,
+  videoLabel = "Kelvi video",
 }: {
   number: number;
   category: string;
   title?: string | null;
   questionText: string;
   src?: string | null;
+  videoSrc?: string | null;
+  videoLabel?: string;
 }) {
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
+  const [failedVideo, setFailedVideo] = useState<string | null>(null);
+  const showVideo = Boolean(videoSrc && failedVideo !== videoSrc);
   const scene = stillSceneFor({ title, questionText, category });
   const photo = Boolean(src && loadedSrc === src);
   return (
-    <div className="kelvi-poster">
+    <div className={showVideo ? "kelvi-poster has-video" : "kelvi-poster"}>
       <div
         className="kelvi-poster-fallback"
         style={{ background: `linear-gradient(165deg, ${scene.from}, ${scene.to})` }}
@@ -37,6 +43,14 @@ export function QuestionStill({
           onError={() => setLoadedSrc(null)}
           className={photo ? "kelvi-poster-image is-loaded" : "kelvi-poster-image"}
         />
+      ) : null}
+      {showVideo && videoSrc ? (
+        <video key={videoSrc} src={videoSrc} poster={src ?? undefined}
+          controls playsInline preload="metadata" aria-label={videoLabel}
+          onError={() => setFailedVideo(videoSrc)} className="kelvi-poster-video" />
+      ) : null}
+      {videoSrc && failedVideo === videoSrc ? (
+        <p role="status" className="kelvi-video-error">Video unavailable</p>
       ) : null}
       <div className="kelvi-poster-copy">
         <p>{category} · Kelvi #{number}</p>

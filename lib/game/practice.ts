@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { stillPath } from "../catalog/stills";
+import { getAnswerVideo } from "./answer-video";
 import { asStringArray, gradeAnswer } from "./answers";
 import { KELVI_SLUG } from "./scoring";
 import { computeQuestionStatus } from "./time";
@@ -214,7 +215,10 @@ export async function gradePracticeQuestion(
     select: PRACTICE_SELECT,
   });
   if (!row || !isPracticeVisible(row, input.visibility, now)) return null;
-  const next = await nextPracticeQuestion(db, row.number, input.visibility, now);
+  const [next, answerVideoUrl] = await Promise.all([
+    nextPracticeQuestion(db, row.number, input.visibility, now),
+    getAnswerVideo(db, row.id),
+  ]);
 
   return {
     ...gradePractice({
@@ -224,6 +228,7 @@ export async function gradePracticeQuestion(
       acceptableAnswers: row.acceptableAnswers,
       options: row.options,
     }),
+    answerVideoUrl,
     number: row.number,
     nextId: next?.id ?? null,
   };

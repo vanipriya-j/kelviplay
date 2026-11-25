@@ -1,4 +1,5 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
+import { getAnswerVideo } from "./answer-video";
 import { gradeAnswer } from "./answers";
 import { ACHIEVEMENTS, categoryBadgeProgress, streakAchievementCode } from "./achievements";
 import { percentileFaster, rankFasterFingers } from "./leaderboard";
@@ -531,7 +532,7 @@ export async function getAttemptResult(db: PrismaClient, attemptId: string, play
   const weekly = await getPeriodStandings(db, standingsWindows("week", new Date()).current, playerId);
   const weeklyRank = weekly.find((row) => row.isYou)?.rank ?? null;
 
-  const [earned, categoryStats] = await Promise.all([
+  const [earned, categoryStats, answerVideoUrl] = await Promise.all([
     db.playerAchievement.findMany({
       where: { playerId, earnedAt: { gte: new Date(Date.now() - 60_000) } },
       include: { achievement: true },
@@ -542,6 +543,9 @@ export async function getAttemptResult(db: PrismaClient, attemptId: string, play
           where: { playerId_categoryId: { playerId, categoryId: attempt.question.categoryId } },
           select: { correct: true },
         })
+      : null,
+    attempt.question.expireAt.getTime() <= Date.now()
+      ? getAnswerVideo(db, attempt.question.id)
       : null,
   ]);
   const badge = categoryStats
@@ -565,6 +569,7 @@ export async function getAttemptResult(db: PrismaClient, attemptId: string, play
     rank: you?.rank ?? null,
     percentile: you ? percentileFaster(you.rank, ranked.length) : null,
     categoryBadge: badge,
+    answerVideoUrl,
     fasterFingers: board,
     fasterFingersTotal: ranked.length,
     streak: stats?.currentStreak ?? 0,

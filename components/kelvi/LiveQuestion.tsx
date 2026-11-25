@@ -38,7 +38,8 @@ export function LiveQuestion({
   const [saved, setSaved] = useState(false);
   const lockRef = useRef(false);
   const opened = useMemo(() => new Date().toISOString(), []);
-  const hasAudio = Boolean(question.mediaUrl && (question.questionType === "AUDIO" || question.mediaKind === "audio"));
+  const hasAudio = Boolean(question.mediaUrl && question.mediaKind !== "video" && (question.questionType === "AUDIO" || question.mediaKind === "audio"));
+  const videoSrc = question.mediaKind === "video" ? question.mediaUrl : null;
   const multiple = question.questionType === "MULTIPLE_CHOICE";
   const chosenLabel = multiple
     ? question.options.find((option) => option.id === chosen)?.text
@@ -99,7 +100,8 @@ export function LiveQuestion({
         category={question.category ?? "Kelvi"}
         title={question.title}
         questionText={question.questionText}
-        src={(!hasAudio && question.mediaUrl) || stillPath(question.number, "question")}
+        src={(!hasAudio && !videoSrc && question.mediaUrl) || stillPath(question.number, "question")}
+        videoSrc={videoSrc}
       />
 
       <section className="kelvi-round-body" aria-label="Answer">
