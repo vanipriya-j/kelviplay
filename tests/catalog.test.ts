@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import { findChild, upsertFile, type DriveClient } from "@/lib/catalog/drive";
-import { isDriveConfigured, readServiceAccount, serviceAccountEmail } from "@/lib/catalog/google-auth";
+import {
+  DEFAULT_DRIVE_FOLDER_ID,
+  driveFolderId,
+  isDriveConfigured,
+  readServiceAccount,
+  serviceAccountEmail,
+} from "@/lib/catalog/google-auth";
 import { catalogCsv, listCatalogRows } from "@/lib/catalog/rows";
 import { answerStillFile, questionStillFile, STILL_ART } from "@/lib/catalog/stills";
 import { syncCatalogToDrive } from "@/lib/catalog/sync";
@@ -63,6 +69,20 @@ describe("catalog listing", () => {
 });
 
 describe("drive auth", () => {
+  it("uses the Kelvi Drive folder when GOOGLE_DRIVE_FOLDER_ID is unset", () => {
+    const prevFolder = process.env.GOOGLE_DRIVE_FOLDER_ID;
+    delete process.env.GOOGLE_DRIVE_FOLDER_ID;
+    try {
+      expect(driveFolderId()).toBe("18H5tHkVufudMTMBHhjgpSww2pJsAT69U");
+      expect(driveFolderId()).toBe(DEFAULT_DRIVE_FOLDER_ID);
+      process.env.GOOGLE_DRIVE_FOLDER_ID = "other-folder";
+      expect(driveFolderId()).toBe("other-folder");
+    } finally {
+      if (prevFolder === undefined) delete process.env.GOOGLE_DRIVE_FOLDER_ID;
+      else process.env.GOOGLE_DRIVE_FOLDER_ID = prevFolder;
+    }
+  });
+
   it("reads a service account JSON blob", () => {
     const prevJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
     const prevFolder = process.env.GOOGLE_DRIVE_FOLDER_ID;
