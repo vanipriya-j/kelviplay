@@ -20,6 +20,7 @@ export type PracticeListItem = {
 export type PracticeQuestion = {
   id: string;
   number: number;
+  title: string;
   questionText: string;
   questionType: string;
   category: string;
@@ -62,11 +63,10 @@ export function isPracticeVisible(
   visibility: PracticeVisibility,
   now = new Date(),
 ) {
+  void now;
   if (question.status === "ARCHIVED") return false;
-  if (visibility.includeUpcoming) return true;
-  if (question.status === "DRAFT") return false;
-  const state = computeQuestionStatus(question, now);
-  return state === "LIVE" || state === "EXPIRED";
+  if (question.status === "DRAFT") return visibility.includeUpcoming;
+  return true;
 }
 
 export function nextPracticeQuestionId(
@@ -133,6 +133,7 @@ export async function listPracticeQuestions(
 function toPracticeQuestion(row: {
   id: string;
   number: number;
+  internalTitle: string;
   questionText: string;
   questionType: string;
   mediaUrl: string | null;
@@ -143,6 +144,7 @@ function toPracticeQuestion(row: {
   return {
     id: row.id,
     number: row.number,
+    title: row.internalTitle,
     questionText: row.questionText,
     questionType: row.questionType,
     category: row.category.name,
@@ -163,18 +165,11 @@ export function nextPracticeWhere(
   visibility: PracticeVisibility,
   now = new Date(),
 ): Prisma.QuestionWhereInput {
-  if (visibility.includeUpcoming) {
-    return {
-      game: { slug: KELVI_SLUG },
-      number: { gt: afterNumber },
-      status: { not: "ARCHIVED" },
-    };
-  }
+  void now;
   return {
     game: { slug: KELVI_SLUG },
     number: { gt: afterNumber },
-    status: { notIn: ["DRAFT", "ARCHIVED"] },
-    releaseAt: { lte: now },
+    status: visibility.includeUpcoming ? { not: "ARCHIVED" } : { notIn: ["DRAFT", "ARCHIVED"] },
   };
 }
 

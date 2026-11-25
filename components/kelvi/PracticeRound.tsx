@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { submitPracticeAction } from "@/lib/actions/practice";
 import { cn } from "@/lib/utils";
 import { QuestionStill } from "./QuestionStill";
@@ -9,6 +10,7 @@ import { QuestionStill } from "./QuestionStill";
 type QuestionPayload = {
   id: string;
   number: number;
+  title?: string | null;
   questionText: string;
   questionType: string;
   category: string;
@@ -38,13 +40,17 @@ export function PracticeRound({
   const [error, setError] = useState<string | null>(null);
   const [grade, setGrade] = useState<Grade | null>(null);
   const [pending, setPending] = useState(false);
+  const lockRef = useRef(false);
   const multiple = question.questionType === "MULTIPLE_CHOICE";
 
   function submit(answer: string) {
-    if (pending || grade) return;
-    setChosen(answer);
-    setPending(true);
-    setError(null);
+    if (lockRef.current || grade) return;
+    lockRef.current = true;
+    flushSync(() => {
+      setChosen(answer);
+      setPending(true);
+      setError(null);
+    });
     void (async () => {
       try {
         const result = await submitPracticeAction({
@@ -52,6 +58,7 @@ export function PracticeRound({
           answer,
         });
         if (!result.ok) {
+          lockRef.current = false;
           setError(result.message ?? "Could not lock that in.");
           setChosen(null);
           setPending(false);
@@ -65,6 +72,7 @@ export function PracticeRound({
         });
         setPending(false);
       } catch {
+        lockRef.current = false;
         setError("Could not lock that in. Try again.");
         setChosen(null);
         setPending(false);
@@ -73,6 +81,7 @@ export function PracticeRound({
   }
 
   function reset() {
+    lockRef.current = false;
     setText("");
     setChosen(null);
     setError(null);
@@ -82,6 +91,9 @@ export function PracticeRound({
 
   const stillSrc = grade ? question.answerStill : question.questionStill;
   const locked = pending || Boolean(grade);
+  const chosenLabel = multiple
+    ? question.options.find((option) => option.id === chosen)?.text
+    : chosen;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -89,18 +101,18 @@ export function PracticeRound({
         <div>
           <p className="text-[10px] tracking-[0.32em] uppercase text-muted">Kelvi #{question.number}</p>
           <p className="mt-2 text-[11px] tracking-[0.16em] uppercase text-terracotta">
-            {grade ? (grade.correct ? "You knew it" : "Not this one") : "Practice · no clock"}
+            {grade ? (grade.correct ? "You knew it" : "Not this one") : pending ? "Locked in" : "Practice · no clock"}
           </p>
         </div>
         <p className="text-[11px] tracking-[0.16em] uppercase text-muted">Not scored</p>
       </header>
 
       <QuestionStill
-        key={stillSrc}
         number={question.number}
         category={question.category}
+        title={question.title}
+        questionText={question.questionText}
         src={question.mediaUrl && !grade ? question.mediaUrl : stillSrc}
-        side={grade ? "answer" : "question"}
       />
 
       <h1 className="font-serif mt-6 text-[1.7rem] leading-snug text-ink">{question.questionText}</h1>
@@ -177,15 +189,19 @@ export function PracticeRound({
                 disabled={pending || !text.trim()}
                 className="mt-8 w-full rounded-full bg-ink py-4 text-sm tracking-[0.28em] text-ivory uppercase disabled:opacity-50"
               >
-                {pending ? "GOT IT…" : "LOCK IN"}
+                {pending ? "LOCKED IN" : "LOCK IN"}
               </button>
             ) : null}
           </form>
         )}
       </div>
 
-      {pending && !grade ? (
-        <p className="mt-4 text-sm text-terracotta">Got it. Checking…</p>
+      {chosen && !grade ? (
+        <div className="mt-5 rounded-2xl bg-ink px-5 py-5 text-ivory animate-rise">
+          <p className="text-[11px] tracking-[0.28em] uppercase text-terracotta">Locked in</p>
+          <p className="font-serif mt-2 text-2xl leading-snug">{chosenLabel}</p>
+          <p className="mt-2 text-sm text-ivory/70">Checking…</p>
+        </div>
       ) : null}
 
       {grade ? (
@@ -239,9 +255,12 @@ function optionState(
   }
   if (chosen === optionId) {
     return {
-      className: "border-ink bg-ink text-ivory",
-      label: pending ? "Got it…" : "Your tap",
+      className: "option-btn-locked border-ink bg-ink text-ivory",
+      label: pending ? "Locked in" : "Your tap",
     };
   }
-  return { className: "border-rule bg-cloud text-ink", label: null };
+  return {
+    className: chosen ? "border-rule bg-cloud text-muted" : "border-rule bg-cloud text-ink",
+    label: null,
+  };
 }

@@ -28,6 +28,24 @@ export async function createDriveClient(fetchImpl: typeof fetch = fetch): Promis
   return { token: await googleAccessToken(), fetch: fetchImpl };
 }
 
+export async function listChildren(client: DriveClient, parentId: string): Promise<DriveFile[]> {
+  const files: DriveFile[] = [];
+  let pageToken: string | undefined;
+  do {
+    const url = new URL(`${DRIVE_API}/files`);
+    url.searchParams.set("q", `'${escapeDriveQuery(parentId)}' in parents and trashed = false`);
+    url.searchParams.set("pageSize", "1000");
+    url.searchParams.set("fields", "nextPageToken,files(id,name,mimeType,webViewLink)");
+    url.searchParams.set("supportsAllDrives", "true");
+    url.searchParams.set("includeItemsFromAllDrives", "true");
+    if (pageToken) url.searchParams.set("pageToken", pageToken);
+    const json = await driveJson<{ files?: DriveFile[]; nextPageToken?: string }>(client, url.toString());
+    files.push(...(json.files ?? []));
+    pageToken = json.nextPageToken;
+  } while (pageToken);
+  return files;
+}
+
 export async function findChild(
   client: DriveClient,
   parentId: string,

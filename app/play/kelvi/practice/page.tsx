@@ -22,9 +22,8 @@ export default async function PracticeIndexPage() {
       <p className="text-[10px] tracking-[0.32em] uppercase text-muted">Practice</p>
       <h1 className="font-serif mt-4 text-4xl leading-tight">See a still. Answer. Know.</h1>
       <p className="mt-4 text-sm text-muted">
-        Tap one choice, or type the word. You’ll see at once if you knew it. Posters come from the
-        Drive stills GPT is filling (<span className="text-ink">kelvi-0170-question.png</span>).
-        Practice never scores.
+        Tap one choice, or type the word. You’ll see at once if you knew it. The picture on each
+        question is that Kelvi’s GPT still. Practice never scores.
       </p>
 
       {first ? (
@@ -36,8 +35,7 @@ export default async function PracticeIndexPage() {
         </Link>
       ) : (
         <p className="mt-10 text-sm text-muted">
-          No questions are in practice yet. Sign in as admin to try drafts and upcoming drops, or
-          add Kelvis in admin.
+          No questions are in practice yet. Add Kelvis in admin.
         </p>
       )}
 

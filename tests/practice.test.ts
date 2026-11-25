@@ -40,13 +40,13 @@ describe("practice visibility", () => {
     ).toBe(true);
   });
 
-  it("hides drafts, upcoming drops, and archives from public practice", () => {
+  it("hides drafts and archives from public practice, but lets anyone try upcoming drops", () => {
     expect(
       isPracticeVisible({ status: "DRAFT", ...windowAround("future") }, { includeUpcoming: false }, now),
     ).toBe(false);
     expect(
       isPracticeVisible({ status: "SCHEDULED", ...windowAround("future") }, { includeUpcoming: false }, now),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       isPracticeVisible({ status: "ARCHIVED", ...windowAround("past") }, { includeUpcoming: false }, now),
     ).toBe(false);
@@ -99,7 +99,7 @@ describe("practice walk", () => {
     } as unknown as PrismaClient;
 
     const publicList = await listPracticeQuestions(db, { includeUpcoming: false }, now);
-    expect(publicList.map((item) => item.number)).toEqual([170]);
+    expect(publicList.map((item) => item.number)).toEqual([170, 190]);
 
     const adminList = await listPracticeQuestions(db, { includeUpcoming: true }, now);
     expect(adminList.map((item) => item.number)).toEqual([170, 190]);
@@ -144,7 +144,7 @@ describe("practice grading", () => {
           questionType: "TEXT",
           mediaUrl: null,
           mediaKind: null,
-          status: "SCHEDULED",
+          status: "DRAFT",
           ...windowAround("future"),
           correctAnswer: "A question",
           acceptableAnswers: [],
@@ -167,9 +167,11 @@ describe("practice grading", () => {
     const publicNext = nextPracticeWhere(170, { includeUpcoming: false }, now);
     expect(publicNext).toMatchObject({
       number: { gt: 170 },
-      releaseAt: { lte: now },
+      status: { notIn: ["DRAFT", "ARCHIVED"] },
     });
+    expect(publicNext.releaseAt).toBeUndefined();
     const adminNext = nextPracticeWhere(170, { includeUpcoming: true }, now);
     expect(adminNext.releaseAt).toBeUndefined();
+    expect(adminNext.status).toEqual({ not: "ARCHIVED" });
   });
 });

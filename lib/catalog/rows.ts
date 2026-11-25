@@ -2,6 +2,7 @@ import type { PrismaClient } from "@prisma/client";
 import { asStringArray } from "../game/answers";
 import { computeQuestionStatus, toIstDatetimeLocal } from "../game/time";
 import { KELVI_SLUG } from "../game/scoring";
+import { answerStillFile, questionStillFile } from "./stills";
 
 export type CatalogRow = {
   number: number;
@@ -13,16 +14,13 @@ export type CatalogRow = {
   answer: string;
   acceptable: string;
   options: string;
-  imageFile: string;
+  questionImage: string;
+  answerImage: string;
   mediaUrl: string;
   status: string;
   releaseAtIst: string;
   expireAtIst: string;
 };
-
-export function imageFileName(number: number) {
-  return `kelvi-${String(number).padStart(4, "0")}.png`;
-}
 
 export async function listCatalogRows(db: PrismaClient): Promise<CatalogRow[]> {
   const questions = await db.question.findMany({
@@ -46,7 +44,8 @@ export async function listCatalogRows(db: PrismaClient): Promise<CatalogRow[]> {
     options: question.options
       .map((option) => `${option.isCorrect ? "* " : ""}${option.text}`)
       .join(" | "),
-    imageFile: imageFileName(question.number),
+    questionImage: questionStillFile(question.number),
+    answerImage: answerStillFile(question.number),
     mediaUrl: question.mediaUrl ?? "",
     status: computeQuestionStatus(question),
     releaseAtIst: toIstDatetimeLocal(question.releaseAt),
@@ -65,7 +64,8 @@ export function catalogCsv(rows: CatalogRow[]) {
     "answer",
     "acceptable",
     "options",
-    "imageFile",
+    "questionImage",
+    "answerImage",
     "mediaUrl",
     "status",
     "releaseAtIst",

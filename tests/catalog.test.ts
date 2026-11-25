@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { PrismaClient } from "@prisma/client";
-import { assertCatalogPoster, buildCatalogPoster, clipCatalogText } from "@/lib/catalog/poster";
 import { findChild, upsertFile, type DriveClient } from "@/lib/catalog/drive";
 import { isDriveConfigured, readServiceAccount, serviceAccountEmail } from "@/lib/catalog/google-auth";
-import { catalogCsv, imageFileName, listCatalogRows } from "@/lib/catalog/rows";
+import { catalogCsv, listCatalogRows } from "@/lib/catalog/rows";
+import { answerStillFile, questionStillFile, STILL_ART } from "@/lib/catalog/stills";
 import { syncCatalogToDrive } from "@/lib/catalog/sync";
 
 function mockQuestion(overrides: Record<string, unknown> = {}) {
@@ -26,9 +26,9 @@ function mockQuestion(overrides: Record<string, unknown> = {}) {
 }
 
 describe("catalog listing", () => {
-  it("names poster files kelvi-NNNN.png", () => {
-    expect(imageFileName(7)).toBe("kelvi-0007.png");
-    expect(imageFileName(194)).toBe("kelvi-0194.png");
+  it("names question and answer stills separately", () => {
+    expect(questionStillFile(7)).toBe("kelvi-0007-question.png");
+    expect(answerStillFile(194)).toBe("kelvi-0194-answer.png");
   });
 
   it("lists every Kelvi and puts answers only in the admin CSV", async () => {
@@ -40,40 +40,25 @@ describe("catalog listing", () => {
 
     const rows = await listCatalogRows(db);
     expect(rows).toHaveLength(2);
-    expect(rows[0].imageFile).toBe("kelvi-0170.png");
+    expect(rows[0].questionImage).toBe("kelvi-0170-question.png");
+    expect(rows[0].answerImage).toBe("kelvi-0170-answer.png");
     expect(rows[0].answer).toBe("davara");
     expect(rows[0].releaseAtIst).toBe("2026-09-16T06:00");
 
     const csv = catalogCsv(rows);
     expect(csv.startsWith("number,title,question,")).toBe(true);
+    expect(csv).toContain("questionImage,answerImage");
     expect(csv).toContain("davara");
     expect(csv).toContain('"What is filter coffee served in, ""davara""?"');
   });
-});
 
-describe("catalog posters", () => {
-  it("includes the question and never the answer", () => {
-    const poster = buildCatalogPoster({
-      number: 170,
-      title: "Filter coffee",
-      question: "What is filter coffee served in?",
-      category: "Food",
-    });
-    expect(poster.variant).toBe("catalog");
-    expect(poster.prompt).toContain("filter coffee");
-    expect(poster.number).toBe(170);
-    expect(() => assertCatalogPoster(poster)).not.toThrow();
-    const json = JSON.stringify(poster).toLowerCase();
-    expect(json).not.toContain("correctanswer");
-    expect(json).not.toContain("davara");
-    expect(Object.keys(poster)).not.toContain("answer");
-    expect(Object.keys(poster)).not.toContain("question");
-  });
-
-  it("clips long copy so the poster stays readable", () => {
-    expect(clipCatalogText("short", 80)).toBe("short");
-    expect(clipCatalogText("a".repeat(90), 80)).toHaveLength(80);
-    expect(clipCatalogText("a".repeat(90), 80).endsWith("…")).toBe(true);
+  it("treats stills as art, not printed copy", () => {
+    expect(STILL_ART.forbidden.some((rule) => rule.toLowerCase().includes("print the question"))).toBe(
+      true,
+    );
+    expect(STILL_ART.forbidden.some((rule) => rule.toLowerCase().includes("print the answer"))).toBe(
+      true,
+    );
   });
 });
 
@@ -166,7 +151,7 @@ describe("drive upsert", () => {
 });
 
 describe("catalog sync", () => {
-  it("writes the sheet then a batch of poster images", async () => {
+  it("writes the sheet and does not upload generated type cards", async () => {
     const prevFolder = process.env.GOOGLE_DRIVE_FOLDER_ID;
     const prevJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
     process.env.GOOGLE_DRIVE_FOLDER_ID = "folder-1";
@@ -216,30 +201,17 @@ describe("catalog sync", () => {
         findMany: async () => [
           mockQuestion({ number: 170 }),
           mockQuestion({ number: 171, internalTitle: "Kanjira" }),
-          mockQuestion({ number: 172, internalTitle: "Nadaswaram" }),
         ],
       },
     } as unknown as PrismaClient;
 
     try {
-      const first = await syncCatalogToDrive(db, {
-        drive: client,
-        limit: 2,
-        renderPoster: async (row) => Buffer.from(`png-${row.number}`),
-      });
-      expect(first.rows).toBe(3);
-      expect(first.uploaded.map((row) => row.number)).toEqual([170, 171]);
-      expect(first.nextNumber).toBe(171);
-      expect(first.folderUrl).toContain("folder-1");
-
-      const second = await syncCatalogToDrive(db, {
-        drive: client,
-        afterNumber: first.nextNumber ?? 0,
-        limit: 2,
-        renderPoster: async (row) => Buffer.from(`png-${row.number}`),
-      });
-      expect(second.uploaded.map((row) => row.number)).toEqual([172]);
-      expect(second.nextNumber).toBeNull();
+      const result = await syncCatalogToDrive(db, { drive: client });
+      expect(result.rows).toBe(2);
+      expect(result.uploaded).toEqual([]);
+      expect(result.nextNumber).toBeNull();
+      expect(uploaded).toEqual(["Kelvi catalog"]);
+      expect(result.folderUrl).toContain("folder-1");
     } finally {
       process.env.GOOGLE_DRIVE_FOLDER_ID = prevFolder;
       process.env.GOOGLE_SERVICE_ACCOUNT_JSON = prevJson;

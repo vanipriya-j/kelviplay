@@ -16,7 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Link href="/admin/kelvi">Dashboard</Link>
             <Link href="/admin/kelvi/questions">Questions</Link>
             <Link href="/play/kelvi/practice">Practice</Link>
-            <Link href="/admin/kelvi/catalog">Catalog</Link>
+            <Link href="/admin/kelvi/catalog">Stills</Link>
             <Link href="/admin/kelvi/broadcast">Tonight</Link>
             <Link href="/admin/kelvi/players">Players</Link>
             <Link href="/admin/kelvi/rewards">Rewards</Link>

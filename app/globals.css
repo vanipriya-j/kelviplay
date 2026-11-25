@@ -127,3 +127,16 @@ body {
 .option-btn:disabled {
   cursor: default;
 }
+
+@keyframes lock-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(28, 25, 21, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgba(28, 25, 21, 0);
+  }
+}
+
+.option-btn-locked {
+  animation: lock-flash 0.45s ease-out;
+}
