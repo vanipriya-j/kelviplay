@@ -9,7 +9,7 @@ import { isWinnersBoardPublic, parseIstDayKey, latestCompletedDay } from "@/lib/
 import { buildDailyWinnersCard } from "@/lib/share/daily-card";
 
 export const runtime = "nodejs";
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const now = new Date();
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
       </div>
     );
 
-  return new ImageResponse(
+  const image = new ImageResponse(
     (
       <div
         style={{
@@ -114,4 +114,12 @@ export async function GET(request: NextRequest) {
     ),
     { width: 1080, height: 1920 },
   );
+  try {
+    return new Response(await image.arrayBuffer(), {
+      headers: { "Content-Type": "image/png", "Cache-Control": "no-store" },
+    });
+  } catch (error) {
+    console.error("[kelvi] daily card render failed", error);
+    return new Response("Could not render the winners card", { status: 500 });
+  }
 }

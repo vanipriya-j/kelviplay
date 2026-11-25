@@ -26,6 +26,7 @@ type Grade = {
   answer: string;
   nextId: string | null;
   correctOptionId: string | null;
+  answerVideoUrl: string | null;
 };
 
 export function PracticeRound({
@@ -41,7 +42,7 @@ export function PracticeRound({
   const [grade, setGrade] = useState<Grade | null>(null);
   const [pending, setPending] = useState(false);
   const lockRef = useRef(false);
-  const hasAudio = Boolean(question.mediaUrl && (question.questionType === "AUDIO" || question.mediaKind === "audio"));
+  const hasAudio = Boolean(question.mediaUrl && question.mediaKind !== "video" && (question.questionType === "AUDIO" || question.mediaKind === "audio"));
   const multiple = question.questionType === "MULTIPLE_CHOICE";
 
   function submit(answer: string) {
@@ -70,6 +71,7 @@ export function PracticeRound({
           answer: result.answer,
           nextId: result.nextId,
           correctOptionId: result.correctOptionId,
+          answerVideoUrl: result.answerVideoUrl,
         });
         setPending(false);
       } catch {
@@ -90,6 +92,7 @@ export function PracticeRound({
     setPending(false);
   }
 
+  const videoSrc = grade ? grade.answerVideoUrl : question.mediaKind === "video" ? question.mediaUrl : null;
   const stillSrc = grade ? question.answerStill : question.questionStill;
   const locked = pending || Boolean(grade);
   const chosenLabel = multiple
@@ -114,7 +117,9 @@ export function PracticeRound({
         category={question.category}
         title={question.title}
         questionText={question.questionText}
-        src={question.mediaUrl && !hasAudio && !grade ? question.mediaUrl : stillSrc}
+        src={question.mediaUrl && !hasAudio && !videoSrc && !grade ? question.mediaUrl : stillSrc}
+        videoSrc={videoSrc}
+        videoLabel={grade ? "Badhil video" : "Kelvi video"}
       />
 
       <section className="kelvi-round-body" aria-label="Answer">

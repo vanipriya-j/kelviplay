@@ -104,3 +104,5 @@ npm run build
 - Google Drive remains optional for artwork outside the bundled set and for admin catalog sync. The still endpoint looks for `images/kelvi-NNNN-question.png` and `images/kelvi-NNNN-answer.png` in `GOOGLE_DRIVE_FOLDER_ID`. Admin **Stills** updates the listing sheet and requires Editor access for the service account. The sheet includes answers and should stay private. Public share cards never include the question or answer.
 
 The leaderboard has day, week, month, and all-time views. A week starts Sunday at midnight IST and a month starts on the 1st at midnight IST. Completed podiums appear in the app as soon as the period rolls over. The weekly view also shows category champions with at least three correct answers, and player profiles track lifetime category badge tiers.
+
+To add videos, open a Kelvi in Admin → Questions. Select Kelvi video as the media kind and paste the prompt clip’s direct HTTPS URL. The optional Badhil video URL appears after grading in practice and on the live result once the drop ends. Both fields accept direct video-file URLs, with vertical MP4 recommended.

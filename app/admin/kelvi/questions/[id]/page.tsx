@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { QuestionForm } from "@/components/admin/QuestionForm";
+import { getAnswerVideo } from "@/lib/game/answer-video";
 import { asStringArray } from "@/lib/game/answers";
 import { toIstDatetimeLocal } from "@/lib/game/time";
 
@@ -10,12 +11,13 @@ export default async function EditQuestionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [question, categories] = await Promise.all([
+  const [question, categories, answerVideoUrl] = await Promise.all([
     prisma.question.findUnique({
       where: { id },
       include: { options: { orderBy: { sortOrder: "asc" } } },
     }),
     prisma.category.findMany({ orderBy: { name: "asc" } }),
+    getAnswerVideo(prisma, id),
   ]);
   if (!question) notFound();
 
@@ -46,6 +48,7 @@ export default async function EditQuestionPage({
           scoringConfig: JSON.stringify(question.scoringConfig ?? {}, null, 2),
           mediaUrl: question.mediaUrl ?? "",
           mediaKind: question.mediaKind ?? "",
+          answerVideoUrl: answerVideoUrl ?? "",
         }}
       />
     </div>

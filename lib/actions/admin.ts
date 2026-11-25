@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { DEFAULT_SCORING, KELVI_SLUG } from "@/lib/game/scoring";
+import { answerVideoKey } from "@/lib/game/answer-video";
 import { getPeriodStandings, standingsWindows } from "@/lib/game/standings";
 import { parseIstDatetimeLocal } from "@/lib/game/time";
 import { alignToDropGrid } from "@/lib/game/rhythm";
@@ -37,6 +38,7 @@ const questionSchema = z.object({
   scoringConfig: z.string().optional(),
   mediaUrl: z.string().trim().optional(),
   mediaKind: z.enum(["", "image", "audio", "video"]).optional(),
+  answerVideoUrl: z.string().trim().optional(),
 });
 
 function parseList(value?: string) {
@@ -84,6 +86,14 @@ export async function saveQuestionAction(input: unknown) {
     return { ok: false as const, error: "Media URL must start with http." };
   }
 
+  const answerVideoUrl = data.answerVideoUrl || null;
+  if (data.mediaKind === "video" && !isVideoUrl(mediaUrl)) {
+    return { ok: false as const, error: "Enter a direct HTTPS link for the Kelvi video." };
+  }
+  if (answerVideoUrl && !isVideoUrl(answerVideoUrl)) {
+    return { ok: false as const, error: "Enter a direct HTTPS link for the Badhil video." };
+  }
+
   const payload = {
     gameId: game.id,
     number: data.number,
@@ -104,25 +114,41 @@ export async function saveQuestionAction(input: unknown) {
     mediaKind: parseMediaKind(data.questionType, data.mediaKind, data.mediaUrl),
   };
 
-  const question = data.id
-    ? await prisma.question.update({ where: { id: data.id }, data: payload })
-    : await prisma.question.create({ data: payload });
+  const question = await prisma.$transaction(async (tx) => {
+    const saved = data.id
+      ? await tx.question.update({ where: { id: data.id }, data: payload })
+      : await tx.question.create({ data: payload });
 
-  if (data.questionType === "MULTIPLE_CHOICE") {
-    await prisma.questionOption.deleteMany({ where: { questionId: question.id } });
-    await prisma.questionOption.createMany({
-      data: optionLines.map((line, index) => {
-        const isCorrect = line.startsWith("*") || line.startsWith("✓");
-        const text = line.replace(/^(\*|✓)\s*/, "");
-        return {
-          questionId: question.id,
-          text,
-          isCorrect: isCorrect || text === data.correctAnswer,
-          sortOrder: index,
-        };
-      }),
-    });
-  }
+    if (data.questionType === "MULTIPLE_CHOICE") {
+      await tx.questionOption.deleteMany({ where: { questionId: saved.id } });
+      await tx.questionOption.createMany({
+        data: optionLines.map((line, index) => {
+          const isCorrect = line.startsWith("*") || line.startsWith("✓");
+          const text = line.replace(/^(\*|✓)\s*/, "");
+          return {
+            questionId: saved.id,
+            text,
+            isCorrect: isCorrect || text === data.correctAnswer,
+            sortOrder: index,
+          };
+        }),
+      });
+    }
+
+    if (data.answerVideoUrl !== undefined) {
+      const key = answerVideoKey(saved.id);
+      if (answerVideoUrl) {
+        await tx.appConfig.upsert({
+          where: { key },
+          create: { key, value: answerVideoUrl },
+          update: { value: answerVideoUrl },
+        });
+      } else {
+        await tx.appConfig.deleteMany({ where: { key } });
+      }
+    }
+    return saved;
+  });
 
   revalidatePath("/admin/kelvi/questions");
   revalidatePath("/admin/kelvi/catalog");
@@ -139,8 +165,11 @@ export async function deleteQuestionAction(id: string) {
       data: { status: "ARCHIVED" },
     });
   } else {
-    await prisma.questionOption.deleteMany({ where: { questionId: id } });
-    await prisma.question.delete({ where: { id } });
+    await prisma.$transaction([
+      prisma.appConfig.deleteMany({ where: { key: answerVideoKey(id) } }),
+      prisma.questionOption.deleteMany({ where: { questionId: id } }),
+      prisma.question.delete({ where: { id } }),
+    ]);
   }
   revalidatePath("/admin/kelvi/questions");
   revalidatePath("/admin/kelvi/catalog");
@@ -250,6 +279,16 @@ function parseMediaUrl(value?: string) {
     throw new Error("MEDIA_URL");
   }
   return url;
+}
+
+function isVideoUrl(value: string | null) {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password;
+  } catch {
+    return false;
+  }
 }
 
 function parseMediaKind(questionType: string, kind?: string, mediaUrl?: string) {
