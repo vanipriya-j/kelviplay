@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PlayNowButton } from "./PlayNowButton";
 import { RelatedGames } from "./RelatedGames";
+import { PlayLink } from "@/components/layout/PlayFrame";
 import { LiveDot, Wordmark } from "@/components/brand/Wordmark";
 import type { getHomeState } from "@/lib/game/home";
 
@@ -26,10 +27,15 @@ export function KelviHome({ initial }: { initial: HomeState }) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <Wordmark />
-
+      <div className="kelvi-home-stage">
+        <div className="kelvi-home-art" aria-hidden>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/kelvi-0177-question.webp" alt="" />
+        </div>
+        <div className="kelvi-home-copy">
+        <Wordmark />
       {live ? (
-        <section className="mt-14 text-center">
+        <section className="mt-7 text-center">
           <p className="inline-flex items-center gap-2 text-[11px] tracking-[0.28em] uppercase text-terracotta">
             <LiveDot />
             Live
@@ -54,7 +60,7 @@ export function KelviHome({ initial }: { initial: HomeState }) {
       ) : winners ? (
         <WinnersLive winners={winners} next={state.next} />
       ) : (
-        <section className="mt-14 text-center">
+        <section className="mt-7 text-center">
           <p className="text-[11px] tracking-[0.28em] uppercase text-muted">Next Kelvi</p>
           <h1 className="font-serif mt-4 text-4xl leading-tight">A question drops every 2 hours.</h1>
           <p className="mt-5 text-sm tracking-wide text-muted">{state.cadence}</p>
@@ -68,6 +74,9 @@ export function KelviHome({ initial }: { initial: HomeState }) {
           <PracticeLink />
         </section>
       )}
+
+        </div>
+      </div>
 
       {state.setupNeeded ? (
         <p className="mt-8 rounded-2xl border border-rule bg-cloud px-4 py-3 text-sm text-muted">
@@ -142,7 +151,7 @@ function WinnersLive({
   next: HomeState["next"];
 }) {
   return (
-    <section className="mt-14 text-center">
+    <section className="mt-7 text-center">
       <p className="inline-flex items-center gap-2 text-[11px] tracking-[0.28em] uppercase text-terracotta">
         <LiveDot />
         Tonight
@@ -194,9 +203,9 @@ function WinnersLive({
 function PracticeLink() {
   return (
     <p className="mt-8">
-      <Link href="/play/kelvi/practice" className="text-xs tracking-[0.18em] uppercase text-muted">
-        Practice questions, no clock →
-      </Link>
+      <PlayLink href="/play/kelvi/practice" className="block rounded-xl border border-rule bg-cloud px-4 py-3 text-sm text-ink">
+        Browse practice <span aria-hidden>→</span>
+      </PlayLink>
     </p>
   );
 }

@@ -26,7 +26,7 @@ export default async function PracticeQuestionPage({
 
   return (
     <>
-      <PracticeRound question={opened.question} nextId={opened.nextId} />
+      <PracticeRound key={opened.question.id} question={opened.question} nextId={opened.nextId} />
       <Link
         href="/play/kelvi/practice"
         className="mt-8 text-center text-xs tracking-[0.18em] uppercase text-muted"

@@ -8,6 +8,7 @@ import { submitKelviAction } from "@/lib/actions/kelvi";
 import { cn } from "@/lib/utils";
 import { ElapsedTimer } from "./ElapsedTimer";
 import { QuestionStill } from "./QuestionStill";
+import { PlaySpinner } from "@/components/layout/PlayFrame";
 
 type QuestionPayload = {
   id: string;
@@ -33,8 +34,10 @@ export function LiveQuestion({
   const [chosen, setChosen] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [saved, setSaved] = useState(false);
   const lockRef = useRef(false);
   const opened = useMemo(() => new Date().toISOString(), []);
+  const hasAudio = Boolean(question.mediaUrl && (question.questionType === "AUDIO" || question.mediaKind === "audio"));
   const multiple = question.questionType === "MULTIPLE_CHOICE";
   const chosenLabel = multiple
     ? question.options.find((option) => option.id === chosen)?.text
@@ -63,6 +66,7 @@ export function LiveQuestion({
           setPending(false);
           return;
         }
+        setSaved(true);
         router.replace(`/play/kelvi/result/${result.attemptId}`);
       } catch {
         lockRef.current = false;
@@ -79,26 +83,27 @@ export function LiveQuestion({
         <div>
           <p className="text-[10px] tracking-[0.32em] uppercase text-muted">Kelvi #{question.number}</p>
           <p className="mt-2 text-[11px] tracking-[0.16em] uppercase text-terracotta">
-            {pending ? "Locked in" : "Tap what you know"}
+            {saved ? "Answer saved" : pending ? "Saving answer…" : "Live drop"}
           </p>
         </div>
         <ElapsedTimer startedAt={startedAt} />
       </header>
 
+      <div className="kelvi-round">
       <QuestionStill
         number={question.number}
         category={question.category ?? "Kelvi"}
         title={question.title}
         questionText={question.questionText}
-        src={question.mediaUrl || stillPath(question.number, "question")}
+        src={(!hasAudio && question.mediaUrl) || stillPath(question.number, "question")}
       />
 
-      <h1 className="font-serif mt-6 text-[1.7rem] leading-snug text-ink">{question.questionText}</h1>
+      <section className="kelvi-round-body" aria-label="Answer">
       <p className="mt-3 text-sm text-muted">
         {multiple ? "Tap one answer. Speed is counted from now." : "Type the word, then lock it in."}
       </p>
-      {question.mediaUrl && (question.questionType === "AUDIO" || question.mediaKind === "audio") ? (
-        <audio src={question.mediaUrl} controls className="mt-6 w-full" />
+      {hasAudio ? (
+        <audio src={question.mediaUrl ?? undefined} controls className="mt-6 w-full" />
       ) : null}
 
       <div className="mt-6 flex flex-1 flex-col gap-3">
@@ -108,13 +113,9 @@ export function LiveQuestion({
               key={option.id}
               type="button"
               disabled={pending || Boolean(chosen)}
-              onPointerDown={(event) => {
-                if (event.button !== 0) return;
-                submit(option.id);
-              }}
               onClick={() => submit(option.id)}
               className={cn(
-                "option-btn min-h-14 rounded-2xl border px-4 py-4 text-left",
+                "option-btn min-h-14 rounded-xl border px-4 py-3 text-left",
                 chosen === option.id
                   ? "option-btn-locked border-ink bg-ink text-ivory"
                   : chosen
@@ -127,7 +128,7 @@ export function LiveQuestion({
               </span>
               <span className="text-[15px] leading-snug">{option.text}</span>
               {chosen === option.id ? (
-                <span className="mt-1 block text-[11px] tracking-[0.16em] uppercase">Locked in</span>
+                <span className="mt-1 flex items-center gap-2 text-xs">{saved ? "Saved" : <><PlaySpinner /> Saving…</>}</span>
               ) : null}
             </button>
           ))
@@ -159,13 +160,15 @@ export function LiveQuestion({
         )}
       </div>
       {chosen && pending ? (
-        <div className="mt-5 rounded-2xl bg-ink px-5 py-5 text-ivory animate-rise">
+        <div role="status" className="mt-5 rounded-2xl bg-ink px-5 py-5 text-ivory animate-rise">
           <p className="text-[11px] tracking-[0.28em] uppercase text-terracotta">Locked in</p>
           <p className="font-serif mt-2 text-2xl leading-snug">{chosenLabel}</p>
-          <p className="mt-2 text-sm text-ivory/70">Saving your answer…</p>
+          <p className="mt-2 text-sm text-ivory/70">{saved ? "Answer saved. Opening result…" : "Saving your answer…"}</p>
         </div>
       ) : null}
-      {error ? <p className="mt-4 text-sm text-terracotta">{error}</p> : null}
+      {error ? <p role="alert" className="mt-4 rounded-xl border border-terracotta px-4 py-3 text-sm text-terracotta">{error}</p> : null}
+      </section>
+      </div>
     </div>
   );
 }

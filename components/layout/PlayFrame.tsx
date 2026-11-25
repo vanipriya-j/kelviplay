@@ -1,26 +1,79 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
+import { useSyncExternalStore, type ComponentProps } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
+function readTheme() {
+  try {
+    return localStorage.getItem("kelvi-theme") === "day" ? "day" : "night";
+  } catch {
+    return "night";
+  }
+}
+
+function subscribeTheme(update: () => void) {
+  window.addEventListener("kelvi-theme", update);
+  window.addEventListener("storage", update);
+  return () => {
+    window.removeEventListener("kelvi-theme", update);
+    window.removeEventListener("storage", update);
+  };
+}
+
 export function PlayFrame({ children }: { children: React.ReactNode }) {
+  const theme = useSyncExternalStore(subscribeTheme, readTheme, () => "night");
+  function toggleTheme() {
+    try {
+      localStorage.setItem("kelvi-theme", theme === "night" ? "day" : "night");
+      window.dispatchEvent(new Event("kelvi-theme"));
+    } catch {
+      // Storage can be disabled in embedded or restricted browsers.
+    }
+  }
+
   return (
-    <div className="min-h-dvh">
-      <div className="mx-auto min-h-dvh w-full max-w-[430px] bg-ivory shadow-[0_0_0_1px_rgba(28,25,21,0.04)]">
-        <div className="flex min-h-dvh flex-col px-5 pb-24 pt-6">{children}</div>
+    <div className="kelvi-frame" data-theme={theme}>
+      <div className="kelvi-shell">
+        <div className="kelvi-topbar">
+          <Link href="/play/kelvi" aria-label="Kelvi home" className="font-serif text-3xl tracking-tight">Kelvi<span className="text-terracotta">.</span></Link>
+          <button type="button" onClick={toggleTheme} className="kelvi-theme" aria-label={theme === "night" ? "Switch to Day mode" : "Switch to Night mode"}>
+            <span aria-hidden>{theme === "night" ? "☀" : "☾"}</span>
+            {theme === "night" ? "Day mode" : "Night mode"}
+          </button>
+        </div>
+        <div className="kelvi-content">{children}</div>
         <PlayBottomNav />
       </div>
     </div>
   );
 }
 
+export function PlaySpinner() {
+  return <span aria-hidden className="kelvi-spinner" />;
+}
+
+export function PlayLink({ children, className, ...props }: ComponentProps<typeof Link>) {
+  return (
+    <Link {...props} className={cn("kelvi-play-link", className)}>
+      <LinkFeedback>{children}</LinkFeedback>
+    </Link>
+  );
+}
+
+function LinkFeedback({ children }: { children: React.ReactNode }) {
+  const { pending } = useLinkStatus();
+  return pending ? <span role="status" className="inline-flex items-center gap-2"><PlaySpinner /> Opening…</span> : children;
+}
+
 export function PlaySkeleton() {
   return (
-    <div className="flex flex-1 flex-col">
+    <div role="status" className="flex flex-1 flex-col">
       <p className="text-center text-[10px] tracking-[0.38em] uppercase text-muted">Aarla Play</p>
       <p className="font-serif mt-1 text-center text-3xl tracking-[0.18em] text-ink">KELVI</p>
-      <div className="mt-16 space-y-3">
+      <p className="mt-8 flex items-center justify-center gap-2 text-sm text-muted"><PlaySpinner /> Opening Kelvi…</p>
+      <div aria-hidden className="mt-8 animate-pulse space-y-3">
         <div className="mx-auto h-3 w-24 rounded-full bg-rule/70" />
         <div className="mx-auto h-10 w-52 rounded-full bg-rule/50" />
         <div className="mx-auto h-4 w-40 rounded-full bg-rule/40" />
@@ -40,29 +93,31 @@ function PlayBottomNav() {
       ? "profile"
       : pathname.startsWith("/play/kelvi/leaderboard")
         ? "board"
-        : "home";
+        : pathname.startsWith("/play/kelvi/practice") ? "practice" : "home";
 
   const items = [
     { id: "home", href: "/play/kelvi", label: "Kelvi" },
+    { id: "practice", href: "/play/kelvi/practice", label: "Practice" },
     { id: "board", href: "/play/kelvi/leaderboard", label: "Week" },
     { id: "profile", href: "/play/profile", label: "You" },
   ] as const;
 
   return (
-    <nav className="fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-t border-rule bg-ivory/95 backdrop-blur">
-      <ul className="grid grid-cols-3 px-2 py-2">
+    <nav aria-label="Play navigation" className="kelvi-nav">
+      <ul className="grid grid-cols-4 px-2 py-1">
         {items.map((item) => (
           <li key={item.id}>
-            <Link
+            <PlayLink
+              aria-current={current === item.id ? "page" : undefined}
               href={item.href}
               prefetch
               className={cn(
-                "flex flex-col items-center py-2 text-[11px] tracking-[0.18em] uppercase",
-                current === item.id ? "text-ink" : "text-muted",
+                "flex min-h-11 flex-col items-center justify-center rounded-lg text-[11px] tracking-[0.18em] uppercase",
+                current === item.id ? "bg-paper text-ink" : "text-muted",
               )}
             >
               {item.label}
-            </Link>
+            </PlayLink>
           </li>
         ))}
       </ul>

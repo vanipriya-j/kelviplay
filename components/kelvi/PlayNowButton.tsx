@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { playNowAction } from "@/lib/actions/kelvi";
+import { PlaySpinner } from "@/components/layout/PlayFrame";
 import { cn } from "@/lib/utils";
 
 export function PlayNowButton({
@@ -43,14 +44,15 @@ export function PlayNowButton({
         type="button"
         onClick={onPlay}
         disabled={pending}
+        aria-busy={pending}
         className={cn(
-          "w-full rounded-full bg-ink py-4 text-sm tracking-[0.28em] text-ivory uppercase transition-opacity",
+          "kelvi-cta w-full rounded-xl py-4 text-sm tracking-[0.28em] uppercase transition-opacity",
           pending && "opacity-70",
         )}
       >
-        {alreadyPlayed ? "SEE RESULT" : pending ? "OPENING…" : "PLAY NOW"}
+        {pending ? <span role="status" className="inline-flex items-center gap-2"><PlaySpinner /> Opening…</span> : alreadyPlayed ? "See result" : "Play now"}
       </button>
-      {error ? <p className="mt-3 text-center text-sm text-terracotta">{error}</p> : null}
+      {error ? <p role="alert" className="mt-3 text-center text-sm text-terracotta">{error}</p> : null}
     </div>
   );
 }
