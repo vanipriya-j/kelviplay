@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { openLiveKelviAction } from "@/lib/actions/kelvi";
 import { PlaySkeleton } from "@/components/layout/PlayFrame";
 import { LiveQuestion } from "@/components/kelvi/LiveQuestion";
-import { PresenceBeacon } from "@/components/kelvi/PresenceBeacon";
 import Link from "next/link";
 
 export default function LiveKelviPage() {
@@ -59,10 +58,5 @@ export default function LiveKelviPage() {
 
   const payload = opened.opened;
 
-  return (
-    <>
-      <PresenceBeacon questionId={payload.question.id} />
-      <LiveQuestion question={payload.question} startedAt={payload.startedAt} />
-    </>
-  );
+  return <LiveQuestion question={payload.question} startedAt={payload.startedAt} />;
 }

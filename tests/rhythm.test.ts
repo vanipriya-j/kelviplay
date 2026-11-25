@@ -42,15 +42,15 @@ describe("2-hour IST drop grid", () => {
   });
 });
 
-describe("10 PM winners board", () => {
-  it("reveals at 10:00 PM IST (16:30 UTC)", () => {
+describe("midnight winners board", () => {
+  it("reveals at midnight IST (18:30 UTC)", () => {
     const reveal = winnersRevealAt(new Date("2026-09-16T10:00:00.000Z"));
-    expect(reveal.toISOString()).toBe("2026-09-16T16:30:00.000Z");
+    expect(reveal.toISOString()).toBe("2026-09-16T18:30:00.000Z");
   });
 
-  it("is live from 10 PM until 6 AM", () => {
-    expect(isWinnersLive(new Date("2026-09-16T16:29:00.000Z"))).toBe(false);
-    expect(isWinnersLive(new Date("2026-09-16T16:30:00.000Z"))).toBe(true);
+  it("is live from midnight until 6 AM", () => {
+    expect(isWinnersLive(new Date("2026-09-16T18:29:00.000Z"))).toBe(false);
+    expect(isWinnersLive(new Date("2026-09-16T18:30:00.000Z"))).toBe(true);
     expect(isWinnersLive(new Date("2026-09-17T00:29:00.000Z"))).toBe(true);
     expect(isWinnersLive(new Date("2026-09-17T00:30:00.000Z"))).toBe(false);
   });
@@ -60,16 +60,16 @@ describe("10 PM winners board", () => {
     expect(day?.toISOString()).toBe("2026-09-15T18:30:00.000Z");
   });
 
-  it("does not publish a board before that day's 10 PM", () => {
+  it("does not publish a board before the day closes at midnight", () => {
     const day = parseIstDayKey("2026-09-16");
     expect(day).not.toBeNull();
-    expect(isWinnersBoardPublic(day!, new Date("2026-09-16T16:29:00.000Z"))).toBe(false);
-    expect(isWinnersBoardPublic(day!, new Date("2026-09-16T16:30:00.000Z"))).toBe(true);
+    expect(isWinnersBoardPublic(day!, new Date("2026-09-16T18:29:00.000Z"))).toBe(false);
+    expect(isWinnersBoardPublic(day!, new Date("2026-09-16T18:30:00.000Z"))).toBe(true);
   });
 });
 
 describe("live window", () => {
-  it("expires at the start of 10 PM so winners can take the portal", () => {
+  it("closes the final live question at 10 PM", () => {
     const question = {
       releaseAt: new Date("2026-09-16T14:30:00.000Z"),
       expireAt: new Date("2026-09-16T16:30:00.000Z"),

@@ -1,13 +1,13 @@
 import { TIMEZONE } from "./scoring";
 
 const WEEKDAY_OFFSET: Record<string, number> = {
-  Mon: 0,
-  Tue: 1,
-  Wed: 2,
-  Thu: 3,
-  Fri: 4,
-  Sat: 5,
-  Sun: 6,
+  Sun: 0,
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
 };
 
 export function zonedParts(date: Date, timeZone = TIMEZONE) {
@@ -66,19 +66,11 @@ export function zonedDateTimeToUtc(
 
 export function getWeekStart(date = new Date(), timeZone = TIMEZONE): Date {
   const zoned = zonedParts(date, timeZone);
-  const daysFromMonday = WEEKDAY_OFFSET[zoned.weekday] ?? 0;
-  const monday = zonedDateTimeToUtc(
-    {
-      year: zoned.year,
-      month: zoned.month,
-      day: zoned.day,
-      hour: 0,
-      minute: 0,
-      second: 0,
-    },
+  const daysFromSunday = WEEKDAY_OFFSET[zoned.weekday] ?? 0;
+  return zonedDateTimeToUtc(
+    { year: zoned.year, month: zoned.month, day: zoned.day - daysFromSunday },
     timeZone,
   );
-  return new Date(monday.getTime() - daysFromMonday * 24 * 60 * 60 * 1000);
 }
 
 export function getDayStart(date = new Date(), timeZone = TIMEZONE): Date {

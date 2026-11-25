@@ -1,10 +1,11 @@
 import type { PrismaClient } from "@prisma/client";
 import { dailyWinnersImagePath } from "./broadcast";
 import { getDailyWinners } from "./daily-winners";
-import { rankFasterFingers, rankWeekly } from "./leaderboard";
+import { rankFasterFingers, type rankWeekly } from "./leaderboard";
 import { cadenceCopy, formatIstDayLabel, nextDropWindow, winnersBoardDay } from "./rhythm";
-import { nextMilestone, PRESENCE_TTL_MS } from "./scoring";
-import { formatWindowLabel, getDayStart, getWeekStart, istDayKey } from "./time";
+import { getCategoryChampions, getPeriodStandings, standingsWindows, type LeaderboardPeriod } from "./standings";
+import { nextMilestone, parseScoringConfig, PRESENCE_TTL_MS } from "./scoring";
+import { formatWindowLabel, getDayStart, istDayKey, zonedParts } from "./time";
 import { countPlaying, getKelviGame, getLiveHeadline, getNextQuestion } from "./engine";
 import { publicName } from "../utils";
 
@@ -24,6 +25,11 @@ function rhythmNextState(now = new Date()) {
     windowLabel: formatWindowLabel(window.releaseAt, window.expireAt),
     releaseAt: window.releaseAt.toISOString(),
   };
+}
+
+function podiumAnnouncements(now: Date) {
+  const { weekday, day } = zonedParts(now);
+  return { weekly: weekday === "Sun", monthly: day === 1 };
 }
 
 function winnersShell(now = new Date()): HomeWinners | null {
@@ -47,6 +53,7 @@ function emptyHome() {
     next: rhythmNextState(),
     cadence: cadenceCopy(),
     winners: winnersShell(),
+    podiumAnnouncements: podiumAnnouncements(new Date()),
     stats: {
       currentStreak: 0,
       bestStreak: 0,
@@ -85,7 +92,6 @@ export async function getHomeState(db: PrismaClient, playerId?: string | null) {
         : null,
     ]);
 
-    const weekStart = getWeekStart(now);
     const dayStart = getDayStart(now);
     const boardDay = winnersBoardDay(now);
     const rhythmNext = nextDropWindow(now);
@@ -96,10 +102,7 @@ export async function getHomeState(db: PrismaClient, playerId?: string | null) {
               where: { playerId_gameId: { playerId, gameId: game.id } },
             })
           : null,
-        db.weeklyScore.findMany({
-          where: { gameId: game.id, weekStart },
-          include: { player: { select: { id: true, displayName: true } } },
-        }),
+        getPeriodStandings(db, standingsWindows("week", now).current, playerId),
         playerId
           ? db.attempt.count({
               where: {
@@ -133,17 +136,7 @@ export async function getHomeState(db: PrismaClient, playerId?: string | null) {
         boardDay ? getDailyWinners(db, boardDay, playerId).catch(() => null) : null,
       ]);
 
-    const weekly = rankWeekly(
-      weeklyRows.map((row) => ({
-        playerId: row.playerId,
-        displayName: publicName(row.player.displayName),
-        points: row.points,
-        attempted: row.attempted,
-        correct: row.correct,
-        totalResponseMs: row.totalResponseMs,
-      })),
-      playerId,
-    );
+    const weekly = weeklyRows;
     const youWeekly = weekly.find((row) => row.isYou) ?? null;
 
   return {
@@ -167,6 +160,7 @@ export async function getHomeState(db: PrismaClient, playerId?: string | null) {
         }
       : null,
     cadence: cadenceCopy(),
+    podiumAnnouncements: podiumAnnouncements(now),
     winners: dailyWinners && boardDay
       ? {
           dayKey: dailyWinners.dayKey,
@@ -213,106 +207,71 @@ export async function getHomeState(db: PrismaClient, playerId?: string | null) {
   }
 }
 
-export async function getLeaderboardState(db: PrismaClient, playerId?: string | null) {
+export async function getLeaderboardState(
+  db: PrismaClient,
+  playerId?: string | null,
+  period: LeaderboardPeriod = "week",
+  now = new Date(),
+) {
+  const windows = standingsWindows(period, now);
+  const empty = {
+    liveNumber: null as number | null,
+    fasterFingers: [] as ReturnType<typeof rankFasterFingers>,
+    rows: [] as Awaited<ReturnType<typeof getPeriodStandings>>,
+    podium: [] as Awaited<ReturnType<typeof getPeriodStandings>>,
+    you: null as Awaited<ReturnType<typeof getPeriodStandings>>[number] | null,
+    windows,
+    scoring: parseScoringConfig(null),
+    categoryChampions: [] as Awaited<ReturnType<typeof getCategoryChampions>>,
+    unavailable: false,
+  };
+
   try {
-  const now = new Date();
-  const [live, game] = await Promise.all([getLiveHeadline(db, now), getKelviGame(db)]);
-  const weekStart = getWeekStart(now);
-
-  const [weeklyRows, liveAttempts, stats] = await Promise.all([
-    db.weeklyScore.findMany({
-      where: { gameId: game.id, weekStart },
-      include: { player: { select: { id: true, displayName: true } } },
-    }),
-    live
-      ? db.attempt.findMany({
-          where: {
-            questionId: live.id,
-            correct: true,
-            submittedAt: { not: null },
-            responseMs: { not: null },
-          },
-          include: { player: { select: { id: true, displayName: true } } },
+    const [live, rows, podium, categoryChampions] = await Promise.all([
+      getLiveHeadline(db, now),
+      getPeriodStandings(db, windows.current, playerId),
+      windows.previous
+        ? period === "day"
+          ? getDailyWinners(db, windows.previous.start, playerId).then(({ podium }) =>
+              podium.map((row) => ({ ...row, isYou: Boolean(row.isYou), avgResponseMs: null })),
+            )
+          : getPeriodStandings(db, windows.previous, playerId).then((rows) =>
+              rows.filter((row) => row.correct > 0).slice(0, 3),
+            )
+        : [],
+      period === "week" && windows.previous
+        ? getCategoryChampions(db, windows.previous, playerId)
+        : [],
+    ]);
+    const scoring = live
+      ? await db.question.findUnique({ where: { id: live.id }, select: { scoringConfig: true } })
+      : null;
+    const liveAttempts = live
+      ? await db.attempt.findMany({
+          where: { questionId: live.id, correct: true, responseMs: { not: null }, submittedAt: { not: null } },
+          orderBy: [{ responseMs: "asc" }, { playerId: "asc" }],
+          take: 10,
+          select: { playerId: true, responseMs: true, player: { select: { displayName: true } } },
         })
-      : [],
-    playerId
-      ? db.playerGameStats.findUnique({
-          where: { playerId_gameId: { playerId, gameId: game.id } },
-        })
-      : null,
-  ]);
+      : [];
 
-  const weekly = rankWeekly(
-    weeklyRows.map((row) => ({
-      playerId: row.playerId,
-      displayName: publicName(row.player.displayName),
-      points: row.points,
-      attempted: row.attempted,
-      correct: row.correct,
-      totalResponseMs: row.totalResponseMs,
-    })),
-    playerId,
-  );
-
-  let fasterFingers: ReturnType<typeof rankFasterFingers> = [];
-  let liveNumber: number | null = null;
-  if (live) {
-    liveNumber = live.number;
-    const ranked = rankFasterFingers(
-      liveAttempts.map((row) => ({
+    return {
+      ...empty,
+      liveNumber: live?.number ?? null,
+      fasterFingers: rankFasterFingers(liveAttempts.map((row) => ({
         playerId: row.playerId,
         displayName: publicName(row.player.displayName),
-        responseMs: row.responseMs ?? Number.MAX_SAFE_INTEGER,
-      })),
-      playerId,
-    );
-    const top = ranked.slice(0, 10);
-    const you = ranked.find((row) => row.isYou);
-    fasterFingers = you && !top.some((row) => row.isYou) ? [...top, you] : top;
-  }
-
-  const youWeekly = weekly.find((row) => row.isYou) ?? null;
-
-  const boardDay = winnersBoardDay(now);
-  const dailyWinners = boardDay
-    ? await getDailyWinners(db, boardDay, playerId).catch(() => null)
-    : null;
-
-  return {
-    liveNumber,
-    winners: dailyWinners && boardDay
-      ? {
-          dayKey: dailyWinners.dayKey,
-          dayLabel: formatIstDayLabel(boardDay),
-          imageUrl: dailyWinnersImagePath(dailyWinners.dayKey),
-          podium: dailyWinners.podium,
-          fastest: dailyWinners.fastest,
-        }
-      : winnersShell(now),
-    fasterFingers,
-    weekly: weekly.slice(0, 25),
-    weeklyTotal: weekly.length,
-    youWeekly,
-    you: stats
-      ? {
-          currentStreak: stats.currentStreak,
-          attempted: youWeekly?.attempted ?? 0,
-          correct: youWeekly?.correct ?? 0,
-          avgResponseMs: youWeekly?.avgResponseMs ?? null,
-        }
-      : null,
-  };
+        responseMs: row.responseMs!,
+      })), playerId),
+      rows: rows.slice(0, 25),
+      podium,
+      categoryChampions,
+      you: rows.find((row) => row.isYou) ?? null,
+      scoring: parseScoringConfig(scoring?.scoringConfig),
+    };
   } catch (error) {
     console.error("[kelvi] leaderboard failed", error);
-    return {
-      liveNumber: null,
-      winners: winnersShell(),
-      fasterFingers: [],
-      weekly: [],
-      weeklyTotal: 0,
-      youWeekly: null,
-      you: null,
-    };
+    return { ...empty, unavailable: true };
   }
 }
 
@@ -352,7 +311,7 @@ export async function getProfileState(db: PrismaClient, playerId: string) {
     };
   }
 
-  const [stats, categories, weekStart] = await Promise.all([
+  const [stats, categories, weeklyRows] = await Promise.all([
     db.playerGameStats.findUnique({
       where: { playerId_gameId: { playerId, gameId: game.id } },
     }),
@@ -361,15 +320,10 @@ export async function getProfileState(db: PrismaClient, playerId: string) {
       include: { category: true },
       orderBy: { played: "desc" },
     }),
-    Promise.resolve(getWeekStart()),
+    getPeriodStandings(db, standingsWindows("week", new Date()).current, playerId),
   ]);
 
-  const weeklyRows = await db.weeklyScore.findMany({
-    where: { gameId: game.id, weekStart },
-    select: { playerId: true, points: true },
-    orderBy: { points: "desc" },
-  });
-  const weeklyRank = weeklyRows.findIndex((row) => row.playerId === playerId) + 1;
+  const weeklyRank = weeklyRows.find((row) => row.isYou)?.rank ?? null;
   const accuracy =
     stats && stats.totalPlayed > 0
       ? Math.round((stats.totalCorrect / stats.totalPlayed) * 100)

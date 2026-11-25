@@ -14,12 +14,19 @@ export function KelviHome({ initial }: { initial: HomeState }) {
   const [state, setState] = useState(initial);
 
   useEffect(() => {
+    const controller = new AbortController();
     const id = window.setInterval(async () => {
-      const response = await fetch("/api/kelvi/home", { cache: "no-store" });
-      if (!response.ok) return;
-      setState((await response.json()) as HomeState);
+      try {
+        const response = await fetch("/api/kelvi/home", { cache: "no-store", signal: controller.signal });
+        if (response.ok) setState((await response.json()) as HomeState);
+      } catch {
+        // Keep the last confirmed state during a connection interruption.
+      }
     }, 12000);
-    return () => window.clearInterval(id);
+    return () => {
+      controller.abort();
+      window.clearInterval(id);
+    };
   }, []);
 
   const live = state.live;
@@ -49,7 +56,7 @@ export function KelviHome({ initial }: { initial: HomeState }) {
           <p className="mt-6 text-lg text-ink">
             <span className="font-serif text-3xl">{live.playingCount}</span>
             <span className="ml-2 text-sm tracking-[0.12em] uppercase text-muted">
-              people are playing
+              {live.playingCount === 1 ? "player answering now" : "players answering now"}
             </span>
           </p>
           <div className="mt-10">
@@ -77,6 +84,13 @@ export function KelviHome({ initial }: { initial: HomeState }) {
 
         </div>
       </div>
+
+      {state.podiumAnnouncements.weekly || state.podiumAnnouncements.monthly ? (
+        <div className="mt-6 grid gap-2 sm:grid-cols-2">
+          {state.podiumAnnouncements.weekly ? <PlayLink href="/play/kelvi/leaderboard?period=week" className="rounded-xl border border-rule bg-cloud p-4 text-sm">Last week’s winners →</PlayLink> : null}
+          {state.podiumAnnouncements.monthly ? <PlayLink href="/play/kelvi/leaderboard?period=month" className="rounded-xl border border-rule bg-cloud p-4 text-sm">Last month’s winners →</PlayLink> : null}
+        </div>
+      ) : null}
 
       {state.setupNeeded ? (
         <p className="mt-8 rounded-2xl border border-rule bg-cloud px-4 py-3 text-sm text-muted">
@@ -157,7 +171,7 @@ function WinnersLive({
         Tonight
       </p>
       <h1 className="font-serif mt-4 text-4xl leading-tight tracking-wide">
-        TODAY’S WINNERS
+        DAILY WINNERS
       </h1>
       <p className="mt-4 text-sm tracking-wide text-muted">{winners.dayLabel}</p>
       <div className="mx-auto mt-8 max-w-[280px] overflow-hidden rounded-[28px] border border-rule bg-cloud">
@@ -195,6 +209,7 @@ function WinnersLive({
           Next Kelvi {next.windowLabel.toLowerCase()}
         </p>
       ) : null}
+      <PlayLink href="/play/kelvi/leaderboard?period=day" className="mt-4 inline-block text-sm text-terracotta">See daily standings →</PlayLink>
       <PracticeLink />
     </section>
   );

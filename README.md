@@ -4,9 +4,9 @@ Kelvi is a live community game, not a quiz app.
 
 A question drops. Players answer as fast as they can. Rankings, streaks, and weekly Aarla vouchers keep the room coming back.
 
-**Kelvi drops every 2 hours → answer fast → see rank → protect streak → share result → return. At 10 PM the day’s winners go up.**
+**Kelvi drops every 2 hours → answer fast → see rank → protect streak → share result → return. Daily winners go up at midnight IST.**
 
-A question is live from 6:00 AM to 10:00 PM IST on a two-hour grid (6, 8, 10, 12, 2, 4, 6, 8). The 8–10 PM Kelvi ends at 10:00 PM. Then today’s winners image is announced on the portal and published to **@aarla.play**, **@aarla.kanakangi**, and **@aarla.merch**.
+A question is live from 6:00 AM to 10:00 PM IST on a two-hour grid (6, 8, 10, 12, 2, 4, 6, 8). The 8–10 PM Kelvi ends at 10:00 PM. At midnight, the completed day’s winners image is announced on the portal and published to **@aarla.play**, **@aarla.kanakangi**, and **@aarla.merch**.
 
 ## Stack
 
@@ -67,7 +67,7 @@ Guests can play immediately. Account creation is required to keep streaks, enter
 | `/admin/kelvi/rewards` | Weekly vouchers |
 | `/admin/kelvi/broadcast` | Tonight’s winners image + Instagram publish |
 
-A question drops every 2 hours (Asia/Kolkata). At 10 PM the portal shows today’s winners until 6 AM. Vercel Cron (`/api/cron/kelvi`) publishes that image to the three Aarla Instagram handles when `INSTAGRAM_PUBLISH_ACCOUNTS` is set.
+A question drops every 2 hours (Asia/Kolkata). At midnight IST the portal shows the completed day’s winners until 6 AM. Vercel Cron (`/api/cron/kelvi`) publishes that image to the three Aarla Instagram handles when `INSTAGRAM_PUBLISH_ACCOUNTS` is set.
 
 ## Scoring
 
@@ -99,6 +99,8 @@ npm run build
 - Magic links currently print a demo URL; wire SMTP before public launch.
 - Voucher redemption is manual in admin. No payments in this MVP.
 - Share cards never include the question or answer. Player share is native / save image only.
-- Tonight’s winners image is generated at `/api/share/daily?day=YYYY-MM-DD` after 10 PM IST. Vercel Cron posts it to Instagram when `CRON_SECRET` and `INSTAGRAM_PUBLISH_ACCOUNTS` are set (`handle|igUserId|token` for aarla.play, aarla.kanakangi, aarla.merch). The portal still shows the image if Instagram tokens are missing.
+- Tonight’s winners image is generated at `/api/share/daily?day=YYYY-MM-DD` after midnight IST. Vercel Cron posts it to Instagram when `CRON_SECRET` and `INSTAGRAM_PUBLISH_ACCOUNTS` are set (`handle|igUserId|token` for aarla.play, aarla.kanakangi, aarla.merch). The portal still shows the image if Instagram tokens are missing.
 - Kelvi #170–194 ship with question and answer illustrations in `public/images` as WebP files. Play uses them directly without Google Drive credentials. Question artwork appears in live play and practice, and practice switches to the answer artwork after grading.
 - Google Drive remains optional for artwork outside the bundled set and for admin catalog sync. The still endpoint looks for `images/kelvi-NNNN-question.png` and `images/kelvi-NNNN-answer.png` in `GOOGLE_DRIVE_FOLDER_ID`. Admin **Stills** updates the listing sheet and requires Editor access for the service account. The sheet includes answers and should stay private. Public share cards never include the question or answer.
+
+The leaderboard has day, week, month, and all-time views. A week starts Sunday at midnight IST and a month starts on the 1st at midnight IST. Completed podiums appear in the app as soon as the period rolls over. The weekly view also shows category champions with at least three correct answers, and player profiles track lifetime category badge tiers.

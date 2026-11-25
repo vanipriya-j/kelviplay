@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/db";
 import { RewardsPanel } from "@/components/admin/RewardsPanel";
-import { getWeekStart } from "@/lib/game/time";
+import { standingsWindows } from "@/lib/game/standings";
 import { publicName } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function RewardsPage() {
-  const weekStart = getWeekStart();
+  const weekStart = standingsWindows("week", new Date()).previous!.start;
   const [rewards, players] = await Promise.all([
     prisma.reward.findMany({
       orderBy: { weekStart: "desc" },

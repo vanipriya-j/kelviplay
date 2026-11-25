@@ -1,7 +1,8 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { gradeAnswer } from "./answers";
-import { ACHIEVEMENTS, streakAchievementCode } from "./achievements";
+import { ACHIEVEMENTS, categoryBadgeProgress, streakAchievementCode } from "./achievements";
 import { percentileFaster, rankFasterFingers } from "./leaderboard";
+import { getPeriodStandings, standingsWindows } from "./standings";
 import { rateLimit } from "../rate-limit";
 import {
   computeScore,
@@ -102,7 +103,11 @@ export async function getNextQuestion(db: PrismaClient, now = new Date()) {
 export async function countPlaying(db: PrismaClient, questionId: string, now = new Date()) {
   const since = new Date(now.getTime() - PRESENCE_TTL_MS);
   return db.livePresence.count({
-    where: { questionId, lastSeenAt: { gte: since } },
+    where: {
+      questionId,
+      lastSeenAt: { gte: since },
+      player: { attempts: { none: { questionId, submittedAt: { not: null } } } },
+    },
   });
 }
 
@@ -264,7 +269,7 @@ export async function submitKelvi(
   });
   const scoring = parseScoringConfig(question.scoringConfig);
   const scored = computeScore({ correct, responseMs, scoring });
-  const competitive = question.competitive && isLiveAt(question, attempt.startedAt);
+  const competitive = question.competitive && isLiveAt(question, attempt.startedAt) && isLiveAt(question, now);
 
   const locked = await db.attempt.updateMany({
     where: { id: attempt.id, submittedAt: null },
@@ -296,6 +301,7 @@ export async function submitKelvi(
       score: scored.score,
       responseMs,
       streakRule: question.streakRule as StreakRule,
+      submittedAt: now,
     });
     await maybeAwardAchievements(db, {
       playerId: input.playerId,
@@ -318,9 +324,10 @@ async function applyProgress(
     score: number;
     responseMs: number;
     streakRule: StreakRule;
+    submittedAt: Date;
   },
 ) {
-  const weekStart = getWeekStart();
+  const weekStart = getWeekStart(input.submittedAt);
   const stats = await db.playerGameStats.findUnique({
     where: {
       playerId_gameId: { playerId: input.playerId, gameId: input.gameId },
@@ -521,19 +528,25 @@ export async function getAttemptResult(db: PrismaClient, attemptId: string, play
   const inTop = top.some((row) => row.isYou);
   const board = inTop ? top : you ? [...top, you] : top;
 
-  const weekStart = getWeekStart();
-  const weekly = await db.weeklyScore.findMany({
-    where: { gameId: game.id, weekStart },
-    include: { player: { select: { id: true, displayName: true } } },
-  });
-  weekly.sort((a, b) => b.points - a.points);
-  const weeklyRank = weekly.findIndex((row) => row.playerId === playerId) + 1;
+  const weekly = await getPeriodStandings(db, standingsWindows("week", new Date()).current, playerId);
+  const weeklyRank = weekly.find((row) => row.isYou)?.rank ?? null;
 
-  const earned = await db.playerAchievement.findMany({
-    where: { playerId, earnedAt: { gte: new Date(Date.now() - 60_000) } },
-    include: { achievement: true },
-    orderBy: { earnedAt: "desc" },
-  });
+  const [earned, categoryStats] = await Promise.all([
+    db.playerAchievement.findMany({
+      where: { playerId, earnedAt: { gte: new Date(Date.now() - 60_000) } },
+      include: { achievement: true },
+      orderBy: { earnedAt: "desc" },
+    }),
+    attempt.correct && attempt.responseMs !== null
+      ? db.playerCategoryStats.findUnique({
+          where: { playerId_categoryId: { playerId, categoryId: attempt.question.categoryId } },
+          select: { correct: true },
+        })
+      : null,
+  ]);
+  const badge = categoryStats
+    ? { correct: categoryStats.correct, ...categoryBadgeProgress(categoryStats.correct) }
+    : null;
 
   return {
     attempt: {
@@ -551,6 +564,7 @@ export async function getAttemptResult(db: PrismaClient, attemptId: string, play
     },
     rank: you?.rank ?? null,
     percentile: you ? percentileFaster(you.rank, ranked.length) : null,
+    categoryBadge: badge,
     fasterFingers: board,
     fasterFingersTotal: ranked.length,
     streak: stats?.currentStreak ?? 0,

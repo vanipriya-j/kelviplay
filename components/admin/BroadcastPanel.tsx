@@ -47,7 +47,7 @@ export function BroadcastPanel({
       {!configured ? (
         <p className="mt-4 text-sm text-muted">
           Set <span className="text-ink">INSTAGRAM_PUBLISH_ACCOUNTS</span> on Vercel to post to
-          @aarla.play, @aarla.kanakangi, and @aarla.merch. The portal still shows the image at 10 PM
+          @aarla.play, @aarla.kanakangi, and @aarla.merch. The portal still shows the image at midnight IST
           without it.
         </p>
       ) : null}

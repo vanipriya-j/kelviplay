@@ -10,7 +10,6 @@ import {
 /** Live Kelvis drop on this 2-hour IST grid. Last window is 8:00–10:00 PM. */
 export const DROP_HOURS_IST = [6, 8, 10, 12, 14, 16, 18, 20] as const;
 export const DROP_DURATION_HOURS = 2;
-export const WINNERS_HOUR_IST = 22;
 export const FIRST_DROP_HOUR_IST = DROP_HOURS_IST[0];
 
 export const AARLA_HANDLES = ["aarla.play", "aarla.kanakangi", "aarla.merch"] as const;
@@ -92,41 +91,27 @@ export function broadcastConfigKey(dayKey: string) {
 }
 
 export function winnersRevealAt(date = new Date(), timeZone = TIMEZONE) {
-  const start = getDayStart(date, timeZone);
-  const zoned = zonedParts(start, timeZone);
-  return zonedDateTimeToUtc(
-    {
-      year: zoned.year,
-      month: zoned.month,
-      day: zoned.day,
-      hour: WINNERS_HOUR_IST,
-      minute: 0,
-      second: 0,
-    },
-    timeZone,
-  );
+  const { year, month, day } = zonedParts(date, timeZone);
+  return zonedDateTimeToUtc({ year, month, day: day + 1 }, timeZone);
 }
 
-/**
- * From 10:00 PM IST until 6:00 AM the next morning, the portal shows that day's winners.
- * After midnight the calendar day has rolled, so we still use the previous IST day.
- */
+export function latestCompletedDay(now = new Date(), timeZone = TIMEZONE) {
+  const { year, month, day } = zonedParts(now, timeZone);
+  return zonedDateTimeToUtc({ year, month, day: day - 1 }, timeZone);
+}
+
+/** Show the completed day's podium on the home screen until the first morning drop. */
 export function winnersBoardDay(now = new Date(), timeZone = TIMEZONE): Date | null {
-  const zoned = zonedParts(now, timeZone);
-  if (zoned.hour >= WINNERS_HOUR_IST) {
-    return getDayStart(now, timeZone);
-  }
-  if (zoned.hour < FIRST_DROP_HOUR_IST) {
-    return new Date(getDayStart(now, timeZone).getTime() - 24 * 60 * 60 * 1000);
-  }
-  return null;
+  return zonedParts(now, timeZone).hour < FIRST_DROP_HOUR_IST
+    ? latestCompletedDay(now, timeZone)
+    : null;
 }
 
 export function isWinnersLive(now = new Date(), timeZone = TIMEZONE) {
   return winnersBoardDay(now, timeZone) != null;
 }
 
-/** The daily board is public once that IST day's 10 PM reveal has been reached. */
+/** The daily board is public at midnight following that IST day. */
 export function isWinnersBoardPublic(dayStart: Date, now = new Date(), timeZone = TIMEZONE) {
   return winnersRevealAt(dayStart, timeZone).getTime() <= now.getTime();
 }
@@ -141,7 +126,7 @@ export function formatIstDayLabel(dayStart: Date, timeZone = TIMEZONE) {
 }
 
 export function cadenceCopy() {
-  return "A question drops every 2 hours. Today’s winners go up at 10 PM.";
+  return "A question drops every 2 hours. Daily winners are announced at midnight IST.";
 }
 
 export { istDayKey, pad2 };

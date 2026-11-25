@@ -14,10 +14,10 @@ import {
   broadcastConfigKey,
   isWinnersBoardPublic,
   parseIstDayKey,
-  winnersBoardDay,
+  latestCompletedDay,
   winnersRevealAt,
 } from "./rhythm";
-import { getDayStart, istDayKey } from "./time";
+import { istDayKey } from "./time";
 
 export type BroadcastRecord = {
   dayKey: string;
@@ -70,7 +70,7 @@ export async function announceDailyWinners(
   if (!isWinnersBoardPublic(dayStart, now)) {
     return {
       ok: false as const,
-      error: "Today's winners go up at 10 PM IST.",
+      error: "Daily winners go up at midnight IST.",
       dayKey,
       revealAt: winnersRevealAt(dayStart).toISOString(),
     };
@@ -164,7 +164,7 @@ export async function announceDailyWinners(
 
 export function resolveBroadcastDay(dayKey: string | undefined, now: Date) {
   if (dayKey) return parseIstDayKey(dayKey);
-  return winnersBoardDay(now) ?? getDayStart(now);
+  return latestCompletedDay(now);
 }
 
 function mergeAccountResults(
