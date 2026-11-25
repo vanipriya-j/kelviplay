@@ -9,8 +9,11 @@ type ServiceAccount = {
   private_key: string;
 };
 
+/** Kelvi stills Drive folder. Env GOOGLE_DRIVE_FOLDER_ID overrides this. */
+export const DEFAULT_DRIVE_FOLDER_ID = "18H5tHkVufudMTMBHhjgpSww2pJsAT69U";
+
 export function driveFolderId() {
-  return runtimeEnv("GOOGLE_DRIVE_FOLDER_ID");
+  return runtimeEnv("GOOGLE_DRIVE_FOLDER_ID") || DEFAULT_DRIVE_FOLDER_ID;
 }
 
 export function readServiceAccount(): ServiceAccount | null {
