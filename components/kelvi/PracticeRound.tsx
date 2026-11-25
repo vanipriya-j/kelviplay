@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { submitPracticeAction } from "@/lib/actions/practice";
 import { cn } from "@/lib/utils";
 import { QuestionStill } from "./QuestionStill";
+import { PlayLink, PlaySpinner } from "@/components/layout/PlayFrame";
 
 type QuestionPayload = {
   id: string;
@@ -41,6 +41,7 @@ export function PracticeRound({
   const [grade, setGrade] = useState<Grade | null>(null);
   const [pending, setPending] = useState(false);
   const lockRef = useRef(false);
+  const hasAudio = Boolean(question.mediaUrl && (question.questionType === "AUDIO" || question.mediaKind === "audio"));
   const multiple = question.questionType === "MULTIPLE_CHOICE";
 
   function submit(answer: string) {
@@ -107,32 +108,34 @@ export function PracticeRound({
         <p className="text-[11px] tracking-[0.16em] uppercase text-muted">Not scored</p>
       </header>
 
+      <div className="kelvi-round">
       <QuestionStill
         number={question.number}
         category={question.category}
         title={question.title}
         questionText={question.questionText}
-        src={question.mediaUrl && !grade ? question.mediaUrl : stillSrc}
+        src={question.mediaUrl && !hasAudio && !grade ? question.mediaUrl : stillSrc}
       />
 
-      <h1 className="font-serif mt-6 text-[1.7rem] leading-snug text-ink">{question.questionText}</h1>
+      <section className="kelvi-round-body" aria-label="Answer">
       {!grade ? (
         <p className="mt-3 text-sm text-muted">
           {multiple ? "Tap the one you know. You’ll see if it’s right." : "Type the word, then lock it in."}
         </p>
       ) : (
         <p
+          role="status"
           className={cn(
             "mt-4 font-serif text-3xl",
             grade.correct ? "text-forest" : "text-terracotta",
           )}
         >
-          {grade.correct ? "Correct" : "Wrong"}
+          {grade.correct ? "Correct" : "Answer revealed"}<span className="block text-ink">{grade.answer}</span>
         </p>
       )}
 
-      {question.mediaUrl && (question.questionType === "AUDIO" || question.mediaKind === "audio") ? (
-        <audio src={question.mediaUrl} controls className="mt-6 w-full" />
+      {hasAudio ? (
+        <audio src={question.mediaUrl ?? undefined} controls className="mt-6 w-full" />
       ) : null}
 
       <div className="mt-6 flex flex-1 flex-col gap-3">
@@ -144,13 +147,9 @@ export function PracticeRound({
                 key={option.id}
                 type="button"
                 disabled={locked}
-                onPointerDown={(event) => {
-                  if (event.button !== 0) return;
-                  submit(option.id);
-                }}
                 onClick={() => submit(option.id)}
                 className={cn(
-                  "option-btn min-h-14 rounded-2xl border px-4 py-4 text-left",
+                  "option-btn min-h-14 rounded-xl border px-4 py-3 text-left",
                   state.className,
                 )}
               >
@@ -159,7 +158,8 @@ export function PracticeRound({
                 </span>
                 <span className="text-[15px] leading-snug">{option.text}</span>
                 {state.label ? (
-                  <span className="mt-1 block text-[11px] tracking-[0.16em] uppercase">
+                  <span className="mt-1 flex items-center gap-2 text-xs">
+                    {pending && chosen === option.id ? <PlaySpinner /> : null}
                     {state.label}
                   </span>
                 ) : null}
@@ -197,7 +197,7 @@ export function PracticeRound({
       </div>
 
       {chosen && !grade ? (
-        <div className="mt-5 rounded-2xl bg-ink px-5 py-5 text-ivory animate-rise">
+        <div role="status" className="mt-5 rounded-2xl bg-ink px-5 py-5 text-ivory animate-rise">
           <p className="text-[11px] tracking-[0.28em] uppercase text-terracotta">Locked in</p>
           <p className="font-serif mt-2 text-2xl leading-snug">{chosenLabel}</p>
           <p className="mt-2 text-sm text-ivory/70">Checking…</p>
@@ -206,18 +206,15 @@ export function PracticeRound({
 
       {grade ? (
         <div className="mt-6">
-          <p className="text-lg">
-            The answer is <span className="font-serif">{grade.answer}</span>
-          </p>
           <p className="mt-2 text-sm text-muted">Practice does not count toward streak, rank, or the week.</p>
-          <div className="mt-8 space-y-3">
+          <div className="kelvi-next mt-6 space-y-3">
             {(grade.nextId ?? nextId) ? (
-              <Link
+              <PlayLink
                 href={`/play/kelvi/practice/${grade.nextId ?? nextId}`}
                 className="block w-full rounded-full bg-ink py-4 text-center text-sm tracking-[0.28em] text-ivory uppercase"
               >
                 Next Kelvi
-              </Link>
+              </PlayLink>
             ) : (
               <p className="text-center text-sm text-muted">That was the last one in practice.</p>
             )}
@@ -231,7 +228,9 @@ export function PracticeRound({
           </div>
         </div>
       ) : null}
-      {error ? <p className="mt-4 text-sm text-terracotta">{error}</p> : null}
+      {error ? <p role="alert" className="mt-4 rounded-xl border border-terracotta px-4 py-3 text-sm text-terracotta">{error}</p> : null}
+      </section>
+      </div>
     </div>
   );
 }
@@ -256,7 +255,7 @@ function optionState(
   if (chosen === optionId) {
     return {
       className: "option-btn-locked border-ink bg-ink text-ivory",
-      label: pending ? "Locked in" : "Your tap",
+      label: pending ? "Checking…" : "Your tap",
     };
   }
   return {

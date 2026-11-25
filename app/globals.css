@@ -140,3 +140,114 @@ body {
 .option-btn-locked {
   animation: lock-flash 0.45s ease-out;
 }
+
+.kelvi-frame {
+  min-height: 100dvh;
+  --play-accent: #9c3e2a;
+  --play-accent-ink: #fff5e8;
+  background: var(--ivory);
+  color: var(--ink);
+  color-scheme: light;
+}
+.kelvi-frame[data-theme="night"] {
+  --ivory: #181411;
+  --paper: #30241d;
+  --cloud: #231d18;
+  --ink: #fff1dd;
+  --muted: #c5b29d;
+  --rule: #514031;
+  --terracotta: #ffad76;
+  --forest: #b5dca8;
+  --clay: #d1a878;
+  --play-accent: #ffad64;
+  --play-accent-ink: #25170f;
+  background: radial-gradient(ellipse at 12% 0%, #35251c, transparent 48%), var(--ivory);
+  color-scheme: dark;
+}
+.kelvi-shell { max-width: 1140px; margin-inline: auto; }
+.kelvi-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: max(14px, env(safe-area-inset-top)) 24px 12px;
+  border-bottom: 1px solid var(--rule);
+}
+.kelvi-theme {
+  display: inline-flex; align-items: center; gap: .55rem; min-height: 44px;
+  border: 1px solid var(--rule); padding: 0 .85rem; border-radius: 999px;
+  background: var(--cloud); font-size: .8rem;
+}
+.kelvi-content { display: flex; flex-direction: column; padding: 22px 24px calc(6rem + env(safe-area-inset-bottom)); }
+.kelvi-nav {
+  position: fixed; z-index: 20; inset: auto 0 0; margin-inline: auto; max-width: 560px;
+  border: 1px solid var(--rule); border-bottom: 0;
+  background: var(--ivory); padding-bottom: env(safe-area-inset-bottom);
+}
+.kelvi-cta { background: var(--play-accent); color: var(--play-accent-ink); }
+.kelvi-cta:hover { filter: brightness(1.08); }
+.kelvi-play-link, .kelvi-theme { transition: background .15s, border-color .15s, transform .15s; }
+.kelvi-play-link:active, .kelvi-theme:active { transform: scale(.98); }
+.kelvi-frame :is(button, a, input):focus-visible { outline: 2px solid var(--terracotta); outline-offset: 3px; }
+.kelvi-spinner {
+  display: inline-block; vertical-align: middle; width: 1em; height: 1em; flex: none;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+  animation: kelvi-spin .65s linear infinite;
+}
+@keyframes kelvi-spin { to { transform: rotate(360deg); } }
+.kelvi-round, .kelvi-home-stage {
+  display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
+  align-items: start; gap: clamp(24px, 5vw, 64px); margin-top: 20px;
+}
+.kelvi-round-body { padding-block: 6px 22px; }
+.kelvi-poster, .kelvi-home-art {
+  position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: end;
+  min-height: 470px; aspect-ratio: 4 / 4.65; border: 1px solid var(--rule);
+  border-radius: 24px; background: #302014; color: #fff1dd; box-shadow: 0 18px 40px #10080445;
+}
+.kelvi-poster-fallback, .kelvi-poster-image, .kelvi-home-art img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.kelvi-poster-image, .kelvi-home-art img { object-fit: cover; object-position: center 34%; }
+.kelvi-poster-image { opacity: 0; transition: opacity .24s ease; }
+.kelvi-poster-image.is-loaded { opacity: 1; }
+.kelvi-poster-copy {
+  position: relative; width: 100%; padding: clamp(20px, 4vw, 42px);
+  padding-top: 80px; background: linear-gradient(transparent, #130b08e8 54%, #130b08);
+}
+.kelvi-poster-copy p { font-size: .7rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: #ffc58e; }
+.kelvi-poster-copy h1 { font: clamp(2.15rem, 4.1vw, 3.65rem)/1.02 var(--font-serif), Georgia, serif; margin-top: .65rem; text-wrap: balance; }
+.kelvi-home-stage { align-items: center; }
+.kelvi-home-copy { padding-block: 16px; }
+.kelvi-home-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 48%, #130b0866); }
+.kelvi-practice-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 12px; }
+.kelvi-practice-card {
+  display: flex; align-items: end; position: relative; isolation: isolate; overflow: hidden;
+  aspect-ratio: 4 / 5; border: 1px solid var(--rule); border-radius: 16px; background: #302014;
+  padding: 14px; color: #fff1dd;
+}
+.kelvi-practice-card::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(transparent 28%, #130b08 96%); }
+.kelvi-practice-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+.kelvi-practice-card strong, .kelvi-practice-card span span { display: block; }
+.kelvi-practice-card strong { font: 1.75rem/1.1 var(--font-serif), Georgia, serif; }
+.kelvi-practice-card span span { font-size: .7rem; color: #ffc58e; margin-bottom: .25rem; }
+.kelvi-practice-card:hover, .option-btn:not(:disabled):hover { border-color: var(--terracotta); }
+.option-btn:disabled.bg-forest { color: var(--ivory); }
+@media (max-width: 720px) {
+  .kelvi-topbar { padding-inline: 16px; }
+  .kelvi-content { padding: 14px 16px calc(6rem + env(safe-area-inset-bottom)); }
+  .kelvi-round, .kelvi-home-stage { display: flex; flex-direction: column; align-items: stretch; gap: 0; margin-top: 12px; }
+  .kelvi-poster, .kelvi-home-art {
+    margin-inline: -16px; border-inline: 0; border-radius: 0;
+    min-height: 0; aspect-ratio: auto;
+  }
+  .kelvi-poster { min-height: clamp(265px, 46svh, 450px); }
+  .kelvi-poster-image { height: auto; min-height: 100%; object-fit: cover; object-position: center top; }
+  .kelvi-poster-copy { padding: 56px 16px 18px; }
+  .kelvi-poster-copy h1 { font-size: clamp(2rem, 8.5vw, 2.85rem); }
+  .kelvi-round-body { padding-top: 4px; }
+  .kelvi-home-art { height: clamp(165px, 34svh, 285px); }
+  .kelvi-home-art img { object-position: center 26%; }
+  .kelvi-next { position: sticky; bottom: calc(60px + env(safe-area-inset-bottom)); z-index: 2; padding: 8px 0; background: var(--ivory); }
+  .kelvi-practice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kelvi-frame *, .kelvi-frame *::before, .kelvi-frame *::after {
+    animation-duration: .01ms !important; transition-duration: .01ms !important;
+  }
+}

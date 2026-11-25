@@ -19,11 +19,15 @@ export function QuestionStill({
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
   const scene = stillSceneFor({ title, questionText, category });
   const photo = Boolean(src && loadedSrc === src);
-  const bundledPoster = src?.startsWith("/images/kelvi-");
-  const frame = bundledPoster ? "h-[clamp(14rem,36svh,22rem)]" : "h-56";
-
   return (
-    <div className="relative mt-6 overflow-hidden rounded-[28px] border border-rule">
+    <div className="kelvi-poster">
+      <div
+        className="kelvi-poster-fallback"
+        style={{ background: `linear-gradient(165deg, ${scene.from}, ${scene.to})` }}
+        aria-hidden
+      >
+        <StillMotifArt motif={scene.motif} />
+      </div>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -31,22 +35,13 @@ export function QuestionStill({
           alt=""
           onLoad={() => setLoadedSrc(src)}
           onError={() => setLoadedSrc(null)}
-          className={photo ? `${frame} w-full ${bundledPoster ? "bg-ink object-contain" : "object-cover object-center"}` : "hidden"}
+          className={photo ? "kelvi-poster-image is-loaded" : "kelvi-poster-image"}
         />
       ) : null}
-      {photo ? null : (
-        <div
-          className={`relative ${frame} w-full`}
-          style={{
-            background: `radial-gradient(120% 80% at 18% 8%, rgba(243,237,226,0.16), transparent 42%), linear-gradient(165deg, ${scene.from}, ${scene.to})`,
-          }}
-        >
-          <StillMotifArt motif={scene.motif} />
-        </div>
-      )}
-      <p className="pointer-events-none absolute bottom-5 right-5 font-serif text-sm text-ivory/85">
-        #{number}
-      </p>
+      <div className="kelvi-poster-copy">
+        <p>{category} · Kelvi #{number}</p>
+        <h1>{questionText}</h1>
+      </div>
     </div>
   );
 }
