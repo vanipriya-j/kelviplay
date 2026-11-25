@@ -23,9 +23,11 @@ describe("Drive stills in play", () => {
     expect(stillCandidates(170, "answer")).toEqual(["kelvi-0170-answer.png"]);
   });
 
-  it("serves stills through the play proxy so Drive can stay private", () => {
-    expect(stillPath(170, "question")).toBe("/api/kelvi/still?number=170&side=question");
-    expect(stillPath(171, "answer")).toBe("/api/kelvi/still?number=171&side=answer");
+  it("uses bundled artwork for seed questions and the Drive proxy for other questions", () => {
+    expect(stillPath(170, "question")).toBe("/images/kelvi-0170-question.webp");
+    expect(stillPath(194, "answer")).toBe("/images/kelvi-0194-answer.webp");
+    expect(stillPath(169, "question")).toBe("/api/kelvi/still?number=169&side=question");
+    expect(stillPath(195, "answer")).toBe("/api/kelvi/still?number=195&side=answer");
   });
 
   it("matches GPT filenames even when the suffix is not exact", () => {
