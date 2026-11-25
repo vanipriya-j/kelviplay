@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { publicName } from "../utils";
-import { KELVI_SLUG } from "./scoring";
+import { scoredAttempts } from "./standings";
 import { formatResponseSeconds, istDayKey } from "./time";
 
 export type DailyWinnerRow = {
@@ -36,7 +36,7 @@ export function rankDailyWinners(rows: DailyWinnerRow[]): DailyWinnerRow[] {
     if (b.correct !== a.correct) return b.correct - a.correct;
     const aMs = a.bestResponseMs ?? Number.MAX_SAFE_INTEGER;
     const bMs = b.bestResponseMs ?? Number.MAX_SAFE_INTEGER;
-    return aMs - bMs;
+    return aMs - bMs || a.playerId.localeCompare(b.playerId);
   });
 }
 
@@ -63,14 +63,7 @@ export async function getDailyWinners(
 ) {
   const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
   const attempts = await db.attempt.findMany({
-    where: {
-      submittedAt: { not: null },
-      question: {
-        game: { slug: KELVI_SLUG },
-        releaseAt: { gte: dayStart, lt: dayEnd },
-        status: { notIn: ["DRAFT", "ARCHIVED"] },
-      },
-    },
+    where: scoredAttempts({ start: dayStart, end: dayEnd }),
     select: {
       playerId: true,
       correct: true,
@@ -95,9 +88,9 @@ export async function getDailyWinners(
       bestResponseMs: null as number | null,
     };
     current.attempted += 1;
+    current.points += attempt.score;
     if (attempt.correct) {
       current.correct += 1;
-      current.points += attempt.score;
       if (
         attempt.responseMs != null &&
         (current.bestResponseMs == null || attempt.responseMs < current.bestResponseMs)

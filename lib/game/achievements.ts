@@ -54,3 +54,15 @@ export function streakAchievementCode(milestone: number): AchievementCode | null
     ? (code as AchievementCode)
     : null;
 }
+
+export const CATEGORY_BADGE_TIERS = [
+  { correct: 5, title: "Specialist", symbol: "✦" },
+  { correct: 15, title: "Expert", symbol: "✷" },
+  { correct: 35, title: "Master", symbol: "✹" },
+] as const;
+
+export function categoryBadgeProgress(correct: number) {
+  const earned = CATEGORY_BADGE_TIERS.filter((tier) => correct >= tier.correct).at(-1) ?? null;
+  const next = CATEGORY_BADGE_TIERS.find((tier) => correct < tier.correct) ?? null;
+  return { earned, next };
+}

@@ -19,7 +19,7 @@ export default async function NewQuestionPage() {
     <div>
       <h1 className="font-serif text-4xl">New Kelvi</h1>
       <p className="mt-2 text-sm text-muted">
-        Drops snap to the 2-hour IST grid (6:00 AM–8:00 PM). Last window ends at 10 PM, when winners go up.
+        Drops snap to the 2-hour IST grid (6:00 AM–8:00 PM). Last window ends at 10 PM. Daily winners are announced at midnight.
       </p>
       <QuestionForm
         categories={categories}

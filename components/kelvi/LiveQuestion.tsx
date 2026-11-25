@@ -7,6 +7,7 @@ import { stillPath } from "@/lib/catalog/stills";
 import { submitKelviAction } from "@/lib/actions/kelvi";
 import { cn } from "@/lib/utils";
 import { ElapsedTimer } from "./ElapsedTimer";
+import { PresenceBeacon } from "./PresenceBeacon";
 import { QuestionStill } from "./QuestionStill";
 import { PlaySpinner } from "@/components/layout/PlayFrame";
 
@@ -86,7 +87,10 @@ export function LiveQuestion({
             {saved ? "Answer saved" : pending ? "Saving answer…" : "Live drop"}
           </p>
         </div>
-        <ElapsedTimer startedAt={startedAt} />
+        <div className="text-right">
+          <ElapsedTimer startedAt={startedAt} />
+          <PresenceBeacon questionId={question.id} />
+        </div>
       </header>
 
       <div className="kelvi-round">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { categoryBadgeProgress } from "@/lib/game/achievements";
 import { getProfileState } from "@/lib/game/home";
 import { existingPlayerId } from "@/lib/play-session";
 import { formatResponseSeconds } from "@/lib/game/time";
@@ -57,23 +58,27 @@ export default async function ProfilePage() {
       <p className="mt-4 text-sm text-muted">Played {state.stats.played}</p>
 
       <section className="mt-10">
-        <h2 className="text-[11px] tracking-[0.22em] uppercase text-muted">Categories</h2>
-        <ul className="mt-4 space-y-3">
-          {state.categories.map((category) => (
-            <li key={category.slug}>
-              <div className="flex justify-between text-sm">
-                <span>{category.name}</span>
-                <span className="text-muted">{category.accuracy}%</span>
-              </div>
-              <div className="mt-1 h-px bg-rule">
-                <div className="h-px bg-ink" style={{ width: `${Math.max(6, category.accuracy)}%` }} />
-              </div>
-            </li>
-          ))}
-          {state.categories.length === 0 ? (
-            <li className="text-sm text-muted">Play a few Kelvis and this will fill in quietly.</li>
-          ) : null}
+        <h2 className="font-serif text-3xl">Category badges</h2>
+        <p className="mt-2 text-sm text-muted">Earn Specialist, Expert, and Master at 5, 15, and 35 correct answers in a category.</p>
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+          {state.categories.map((category) => {
+            const { earned, next } = categoryBadgeProgress(category.correct);
+            return (
+              <li key={category.slug} className="rounded-2xl border border-rule bg-cloud px-4 py-4">
+                <h3 className="text-sm font-semibold">{category.name}</h3>
+                {earned ? <p className="mt-1 text-terracotta"><span aria-hidden>{earned.symbol} </span>{earned.title}</p> : null}
+                <p className="mt-2 text-xs text-muted">{category.correct} correct · {category.accuracy}% accuracy</p>
+                {next ? (
+                  <div className="mt-2">
+                    <progress className="w-full accent-terracotta" value={category.correct} max={next.correct} aria-label={`${category.name} ${next.title} progress`} />
+                    <p className="text-xs text-muted">{next.correct - category.correct} to {next.title}</p>
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
+        {state.categories.length === 0 ? <p className="mt-4 text-sm text-muted">Play a live round to start earning badges.</p> : null}
       </section>
 
       <div className="mt-10">

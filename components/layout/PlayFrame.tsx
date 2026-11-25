@@ -98,7 +98,7 @@ function PlayBottomNav() {
   const items = [
     { id: "home", href: "/play/kelvi", label: "Kelvi" },
     { id: "practice", href: "/play/kelvi/practice", label: "Practice" },
-    { id: "board", href: "/play/kelvi/leaderboard", label: "Week" },
+    { id: "board", href: "/play/kelvi/leaderboard", label: "Ranks" },
     { id: "profile", href: "/play/profile", label: "You" },
   ] as const;
 

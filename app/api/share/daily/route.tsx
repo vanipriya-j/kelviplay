@@ -5,8 +5,7 @@ import QRCode from "qrcode";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getDailyWinners } from "@/lib/game/daily-winners";
-import { isWinnersBoardPublic, parseIstDayKey, winnersBoardDay } from "@/lib/game/rhythm";
-import { getDayStart } from "@/lib/game/time";
+import { isWinnersBoardPublic, parseIstDayKey, latestCompletedDay } from "@/lib/game/rhythm";
 import { buildDailyWinnersCard } from "@/lib/share/daily-card";
 
 export const runtime = "nodejs";
@@ -15,7 +14,7 @@ export const revalidate = 60;
 export async function GET(request: NextRequest) {
   const now = new Date();
   const dayParam = request.nextUrl.searchParams.get("day");
-  const dayStart = dayParam ? parseIstDayKey(dayParam) : (winnersBoardDay(now) ?? getDayStart(now));
+  const dayStart = dayParam ? parseIstDayKey(dayParam) : latestCompletedDay(now);
   if (!dayStart) {
     return new Response("Invalid day", { status: 400 });
   }
@@ -23,7 +22,7 @@ export async function GET(request: NextRequest) {
     const preview = request.nextUrl.searchParams.get("preview") === "1";
     const session = preview ? await auth() : null;
     if (!session?.user?.isAdmin) {
-      return new Response("Tonight's winners go up at 10 PM", { status: 425 });
+      return new Response("Daily winners go up at midnight IST", { status: 425 });
     }
   }
 

@@ -71,6 +71,18 @@ export default async function ResultPage({
         </div>
       )}
 
+      {result.categoryBadge ? (
+        <Link href="/play/profile" className="mt-6 block rounded-2xl border border-rule bg-cloud px-5 py-4">
+          <span className="font-semibold">{result.question.category} badge</span>
+          {result.categoryBadge.earned ? (
+            <span className="ml-2 text-terracotta">{result.categoryBadge.earned.symbol} {result.categoryBadge.earned.title}</span>
+          ) : null}
+          {result.categoryBadge.next ? (
+            <span className="mt-1 block text-sm text-muted">{result.categoryBadge.next.correct - result.categoryBadge.correct} correct answers to {result.categoryBadge.next.title}</span>
+          ) : null}
+        </Link>
+      ) : null}
+
       {result.recentAchievements.length ? (
         <ul className="mt-8 space-y-1">
           {result.recentAchievements.map((item) => (

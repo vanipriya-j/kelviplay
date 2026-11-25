@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { DEFAULT_SCORING, KELVI_SLUG } from "@/lib/game/scoring";
-import { getWeekStart, parseIstDatetimeLocal } from "@/lib/game/time";
+import { getPeriodStandings, standingsWindows } from "@/lib/game/standings";
+import { parseIstDatetimeLocal } from "@/lib/game/time";
 import { alignToDropGrid } from "@/lib/game/rhythm";
 import { randomVoucherCode } from "@/lib/utils";
 import { z } from "zod";
@@ -175,28 +176,22 @@ export async function assignRewardAction(input: unknown) {
 
   const weekStart = parsed.data.weekStart
     ? new Date(parsed.data.weekStart)
-    : getWeekStart();
+    : standingsWindows("week", new Date()).previous!.start;
+  if (Number.isNaN(weekStart.getTime())) return { ok: false as const, error: "Invalid week." };
   const game = await prisma.game.findUnique({ where: { slug: KELVI_SLUG } });
   if (!game) return { ok: false as const, error: "Kelvi missing." };
 
   let playerId = parsed.data.playerId || null;
   if (!playerId) {
     if (parsed.data.type === "WEEKLY_CHAMPION") {
-      const top = await prisma.weeklyScore.findFirst({
-        where: { gameId: game.id, weekStart },
-        orderBy: [{ points: "desc" }, { correct: "desc" }],
-      });
-      playerId = top?.playerId ?? null;
+      const rows = await getPeriodStandings(prisma, { start: weekStart, end: new Date(weekStart.getTime() + 7 * 86_400_000) });
+      playerId = rows.find((row) => row.correct > 0)?.playerId ?? null;
     } else if (parsed.data.type === "FASTER_FINGERS") {
-      const rows = await prisma.weeklyScore.findMany({
-        where: { gameId: game.id, weekStart, correct: { gte: 3 } },
-      });
-      rows.sort((a, b) => {
-        const aAvg = a.correct ? a.totalResponseMs / a.correct : Infinity;
-        const bAvg = b.correct ? b.totalResponseMs / b.correct : Infinity;
-        return aAvg - bAvg;
-      });
-      playerId = rows[0]?.playerId ?? null;
+      const rows = await getPeriodStandings(prisma, { start: weekStart, end: new Date(weekStart.getTime() + 7 * 86_400_000) });
+      const fastest = rows.filter((row) => row.correct >= 3).sort((a, b) =>
+        (a.avgResponseMs ?? Infinity) - (b.avgResponseMs ?? Infinity),
+      );
+      playerId = fastest[0]?.playerId ?? null;
     } else {
       const eligible = await prisma.playerGameStats.findMany({
         where: { gameId: game.id, currentStreak: { gte: 7 } },
