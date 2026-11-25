@@ -198,8 +198,10 @@ export async function openKelvi(
     question: {
       id: live.id,
       number: live.number,
+      title: live.internalTitle,
       questionText: live.questionText,
       questionType: live.questionType,
+      category: live.category.name,
       mediaUrl: live.mediaUrl,
       mediaKind: live.mediaKind,
       options: live.options.map((option) => ({

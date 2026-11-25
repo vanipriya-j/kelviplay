@@ -49,6 +49,7 @@ export function KelviHome({ initial }: { initial: HomeState }) {
           <div className="mt-10">
             <PlayNowButton alreadyPlayed={live.alreadyPlayed} attemptId={live.attemptId} />
           </div>
+          <PracticeLink />
         </section>
       ) : winners ? (
         <WinnersLive winners={winners} next={state.next} />
@@ -64,6 +65,7 @@ export function KelviHome({ initial }: { initial: HomeState }) {
           ) : (
             <p className="mt-3 text-sm text-muted">A new drop is being set.</p>
           )}
+          <PracticeLink />
         </section>
       )}
 
@@ -184,7 +186,18 @@ function WinnersLive({
           Next Kelvi {next.windowLabel.toLowerCase()}
         </p>
       ) : null}
+      <PracticeLink />
     </section>
+  );
+}
+
+function PracticeLink() {
+  return (
+    <p className="mt-8">
+      <Link href="/play/kelvi/practice" className="text-xs tracking-[0.18em] uppercase text-muted">
+        Practice questions, no clock →
+      </Link>
+    </p>
   );
 }
 

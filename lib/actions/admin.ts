@@ -265,7 +265,7 @@ function parseMediaKind(questionType: string, kind?: string, mediaUrl?: string) 
   return "image";
 }
 
-export async function syncCatalogAction(input?: { afterNumber?: number }) {
+export async function syncCatalogAction() {
   await requireAdmin();
   const { isDriveConfigured } = await import("@/lib/catalog/google-auth");
   if (!isDriveConfigured()) {
@@ -276,12 +276,8 @@ export async function syncCatalogAction(input?: { afterNumber?: number }) {
     };
   }
   try {
-    const { renderCatalogPosterPng } = await import("@/lib/catalog/render-poster");
     const { syncCatalogToDrive } = await import("@/lib/catalog/sync");
-    const result = await syncCatalogToDrive(prisma, {
-      afterNumber: input?.afterNumber,
-      renderPoster: renderCatalogPosterPng,
-    });
+    const result = await syncCatalogToDrive(prisma);
     revalidatePath("/admin/kelvi/catalog");
     return { ok: true as const, ...result };
   } catch (error) {

@@ -37,7 +37,9 @@ Or paste `supabase/kelvi-complete.sql` in the Supabase SQL Editor (first time on
 
 On Vercel, `AUTH_SECRET` is marked sensitive and cannot be revealed. Add a new env var **`SETUP_SECRET`** (Production and Preview), save the value yourself, redeploy, then open **`/setup`** and paste that value. That creates schema `kelvi` on the Aarla OS database already configured as `DATABASE_URL`.
 
-Open [http://localhost:3000](http://localhost:3000). It lands on Kelvi (`/play/kelvi`). The full Aarla Play catalogue is [play.aarla.in](https://play.aarla.in).
+Open [http://localhost:3000](http://localhost:3000). It lands on Kelvi (`/play/kelvi`). To try questions without the 2-hour drop or the speed clock, open `/play/kelvi/practice`. Practice never writes a score.
+
+Play shows GPT movie-poster stills on the question from Drive `images/`: `kelvi-0170-question.png` while you answer, `kelvi-0170-answer.png` after you lock in. If a file is missing, Kelvi paints a still of that question instead of a random letter. The full Aarla Play catalogue is [play.aarla.in](https://play.aarla.in).
 
 ### Demo sign-in
 
@@ -54,13 +56,14 @@ Guests can play immediately. Account creation is required to keep streaks, enter
 | --- | --- |
 | `/` and `/play` | Redirect into Kelvi |
 | `/play/kelvi` | Kelvi home (live or waiting) |
+| `/play/kelvi/practice` | Untimed walk through questions (not scored) |
 | `/play/kelvi/live` | Focused live question |
 | `/play/kelvi/result/[attemptId]` | Result, Faster Fingers, share |
 | `/play/kelvi/leaderboard` | Weekly + current Kelvi |
 | `/play/profile` | Player profile |
 | `/admin/kelvi` | Live room dashboard |
 | `/admin/kelvi/questions` | Schedule Kelvis |
-| `/admin/kelvi/catalog` | Drive listing + poster images |
+| `/admin/kelvi/catalog` | Drive listing for GPT question stills |
 | `/admin/kelvi/rewards` | Weekly vouchers |
 | `/admin/kelvi/broadcast` | Tonight’s winners image + Instagram publish |
 
@@ -97,4 +100,4 @@ npm run build
 - Voucher redemption is manual in admin. No payments in this MVP.
 - Share cards never include the question or answer. Player share is native / save image only.
 - Tonight’s winners image is generated at `/api/share/daily?day=YYYY-MM-DD` after 10 PM IST. Vercel Cron posts it to Instagram when `CRON_SECRET` and `INSTAGRAM_PUBLISH_ACCOUNTS` are set (`handle|igUserId|token` for aarla.play, aarla.kanakangi, aarla.merch). The portal still shows the image if Instagram tokens are missing.
-- Google Drive catalog (optional): admin **Catalog** writes a `Kelvi catalog` sheet plus `images/kelvi-NNNN.png` posters into `GOOGLE_DRIVE_FOLDER_ID`. Share that folder with the service account as Editor. Set `GOOGLE_SERVICE_ACCOUNT_JSON` (or `EMAIL` + `PRIVATE_KEY`). The sheet includes answers — keep the folder private. Public share cards still never include the question or answer. Catalog posters (`/api/catalog/card`) are admin-only and show the question, never the answer.
+- Google Drive stills (optional): GPT images belong on the play question. Put `images/kelvi-NNNN-question.png` and `images/kelvi-NNNN-answer.png` in `GOOGLE_DRIVE_FOLDER_ID`. Play loads them via `/api/kelvi/still`. Admin **Stills** syncs the listing sheet only — it does not overwrite those pictures. Share the folder with the service account as Editor. Set `GOOGLE_SERVICE_ACCOUNT_JSON` (or `EMAIL` + `PRIVATE_KEY`). The sheet includes answers — keep the folder private. Public share cards still never include the question or answer.

@@ -116,9 +116,27 @@ body {
 }
 
 .option-btn {
-  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  touch-action: manipulation;
+  transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
 .option-btn:active {
   transform: scale(0.985);
+}
+
+.option-btn:disabled {
+  cursor: default;
+}
+
+@keyframes lock-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(28, 25, 21, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgba(28, 25, 21, 0);
+  }
+}
+
+.option-btn-locked {
+  animation: lock-flash 0.45s ease-out;
 }
