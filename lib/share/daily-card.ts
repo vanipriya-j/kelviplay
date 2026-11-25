@@ -25,7 +25,7 @@ export type DailyWinnersCard = {
 };
 
 export function dailyShareUrl() {
-  return process.env.NEXT_PUBLIC_SHARE_URL ?? "https://play.aarla.com/k";
+  return process.env.NEXT_PUBLIC_SHARE_URL?.trim() || "https://play.aarla.com/k";
 }
 
 export function buildDailyWinnersCard(input: {
